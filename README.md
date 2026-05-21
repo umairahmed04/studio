@@ -1,3 +1,15 @@
+# 🛑 FIX: Divergent Branches / Git Sync Error 🚀
+
+If you see an error like `fatal: Need to specify how to reconcile divergent branches`, run this in your terminal:
+
+```bash
+npm run repo:fix-sync
+```
+
+This tells Git to merge the two versions of your code instead of failing. After running this, the "Sync" button in the IDE will work correctly.
+
+---
+
 # 🛑 FIX: Disappearing GitHub Popup 🚀
 
 **If the "Publish to GitHub" button opens a window that hides instantly, follow these steps exactly.**

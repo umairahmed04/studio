@@ -12,7 +12,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "repo:reset": "rm -rf .git && git init && git add . && git commit -m 'System Reset: Ready for Fresh GitHub Connection'",
-    "repo:nuke": "rm -rf .git && git config --global --unset-all credential.helper && git init && git add . && git commit -m 'Absolute Fresh Start' && echo 'Reset Complete. PLEASE REFRESH BROWSER PAGE.'"
+    "repo:nuke": "rm -rf .git && git config --global --unset-all credential.helper && git init && git add . && git commit -m 'Absolute Fresh Start' && echo 'Reset Complete. PLEASE REFRESH BROWSER PAGE.'",
+    "repo:fix-sync": "git config pull.rebase false && git pull origin main --allow-unrelated-histories || echo 'Configuration set. Please try syncing again.'"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.2.1",
