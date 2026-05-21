@@ -24,7 +24,9 @@ import {
   HelpCircle,
   Activity,
   Layers,
-  Globe
+  Globe,
+  ImageIcon,
+  Type
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -249,6 +251,8 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
     onUpdate({ content: { ...section.content, [key]: value } });
   };
 
+  const showImageField = ['hero', 'about'].includes(section.type);
+
   return (
     <Card className="overflow-hidden border-white/5 bg-card/50 transition-all hover:border-primary/20">
       <div className="bg-muted/30 px-6 py-4 flex items-center justify-between border-b border-white/5">
@@ -269,26 +273,58 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
       
       {expanded && (
         <CardContent className="p-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Heading / Section Title</label>
-            <Input 
-              value={section.content?.heading || section.content?.title || ''} 
-              onChange={(e) => handleContentUpdate(section.content?.title ? 'title' : 'heading', e.target.value)} 
-              className="h-11 font-bold" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Body Content (WordPress Editor)</label>
-            <div className="bg-background rounded-lg border quill-editor">
-              <ReactQuill 
-                theme="snow"
-                value={section.content?.description || section.content?.subheading || ''}
-                onChange={(val) => handleContentUpdate(section.content?.subheading ? 'subheading' : 'description', val)}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Enter rich text description here..."
-              />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                  <Type size={12} className="text-primary" />
+                  Heading / Section Title
+                </label>
+                <Input 
+                  value={section.content?.heading || section.content?.title || ''} 
+                  onChange={(e) => handleContentUpdate(section.content?.title ? 'title' : 'heading', e.target.value)} 
+                  className="h-11 font-bold" 
+                />
+              </div>
+
+              {showImageField && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                    <ImageIcon size={12} className="text-primary" />
+                    Featured Visual (Image URL)
+                  </label>
+                  <Input 
+                    value={section.content?.imageUrl || ''} 
+                    onChange={(e) => handleContentUpdate('imageUrl', e.target.value)} 
+                    placeholder="https://picsum.photos/seed/..."
+                    className="h-11 font-mono text-xs" 
+                  />
+                </div>
+              )}
             </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Body Content (WordPress Editor)</label>
+              <div className="bg-background rounded-lg border quill-editor">
+                <ReactQuill 
+                  theme="snow"
+                  value={section.content?.description || section.content?.subheading || ''}
+                  onChange={(val) => handleContentUpdate(section.content?.subheading ? 'subheading' : 'description', val)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Enter rich text description here..."
+                />
+              </div>
+            </div>
+
+            {section.content?.imageUrl && (
+              <div className="pt-4">
+                <p className="text-[9px] font-black uppercase text-muted-foreground mb-2">Visual Preview</p>
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-white/5 bg-muted/50 max-w-sm">
+                  <img src={section.content.imageUrl} alt="Preview" className="object-cover w-full h-full" />
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       )}
@@ -298,10 +334,10 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
 
 function getInitialContent(type: string) {
   switch(type) {
-    case 'hero': return { heading: 'Enter Heading', subheading: '<p>Provide a compelling subheading.</p>', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup' };
+    case 'hero': return { heading: 'Enter Heading', subheading: '<p>Provide a compelling subheading.</p>', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup', showPremiumMockups: true };
     case 'features': return { title: 'Core Features', items: [{ title: 'Feature 1', desc: 'Detail here', icon: 'zap' }] };
     case 'faq': return { title: 'Common Questions', items: [{ question: 'What is this?', answer: 'It is an AI platform.' }] };
-    case 'about': return { title: 'About Us', description: '<p>Tell your story here with rich formatting.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
+    case 'about': return { title: 'Our Story', description: '<p>Tell your story here with rich formatting.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
     case 'cta': return { title: 'Ready to optimize?', description: '<p>Join today.</p>', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
     default: return {};
   }

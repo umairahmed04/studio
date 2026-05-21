@@ -18,7 +18,10 @@ export function CmsAbout({ content }: AboutProps) {
             <h2 className="text-3xl md:text-4xl font-headline font-bold">
               {content.title || 'Why Choose Our AI Optimization?'}
             </h2>
-            <div className="text-lg text-muted-foreground prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: content.description || '' }} />
+            <div 
+              className="text-lg text-muted-foreground prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-strong:text-foreground prose-ul:space-y-2 prose-li:text-sm" 
+              dangerouslySetInnerHTML={{ __html: content.description || '' }} 
+            />
             {content.list && content.list.length > 0 && (
               <ul className="space-y-4 pt-4">
                 {content.list.map((item, i) => (
