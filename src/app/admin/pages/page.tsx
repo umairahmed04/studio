@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,10 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * @fileOverview Page Management Dashboard.
+ * Handles dynamic content creation and auto-provisions core pages (Home, About).
+ */
 export default function PageManagement() {
   const db = useFirestore();
   const router = useRouter();
@@ -24,6 +28,30 @@ export default function PageManagement() {
   }, [db]);
 
   const { data: pages, loading } = useCollection(pagesQuery);
+
+  // Functional Logic: Auto-provision core pages if they are missing from CMS
+  useEffect(() => {
+    if (!loading && pages && db) {
+      const coreSlugs = ['about', 'home'];
+      coreSlugs.forEach(async (slug) => {
+        const exists = pages.some((p: any) => p.slug === slug);
+        if (!exists) {
+          try {
+            await addDoc(collection(db, 'pages'), {
+              title: slug === 'about' ? 'About Us' : 'Home Page',
+              slug: slug,
+              status: 'draft',
+              seo: { title: '', description: '', ogImage: '' },
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.warn(`Failed to auto-provision ${slug} page`);
+          }
+        }
+      });
+    }
+  }, [loading, pages, db]);
 
   const filteredPages = pages?.filter((p: any) => 
     p.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -48,7 +76,11 @@ export default function PageManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, slug: string) => {
+    if (slug === 'home' || slug === 'about') {
+      toast({ variant: "destructive", title: "Protected Page", description: "Core system pages cannot be deleted, only edited." });
+      return;
+    }
     if (!db || !confirm('Delete this page permanently? All sections will be lost.')) return;
     await deleteDoc(doc(db, 'pages', id));
   };
@@ -58,7 +90,7 @@ export default function PageManagement() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-headline font-bold">Page Management</h1>
-          <p className="text-muted-foreground">Manage dynamic website content, slugs, and live publication status.</p>
+          <p className="text-muted-foreground">Manage dynamic website content, core pages, and publication status.</p>
         </div>
         <Button onClick={handleCreatePage} className="font-bold h-12 px-6 shadow-lg shadow-primary/20">
           <Plus size={18} className="mr-2" /> Create New Page
@@ -110,7 +142,13 @@ export default function PageManagement() {
                     <Button variant="ghost" size="icon" asChild title="View Live Page">
                       <a href={`/${page.slug === 'home' ? '' : page.slug}`} target="_blank"><Eye size={16} /></a>
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(page.id)}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:bg-destructive/10 disabled:opacity-30" 
+                      onClick={() => handleDelete(page.id, page.slug)}
+                      disabled={page.slug === 'home' || page.slug === 'about'}
+                    >
                       <Trash2 size={16} />
                     </Button>
                   </div>
@@ -126,12 +164,12 @@ export default function PageManagement() {
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-2">
                 <Sparkles size={20} />
               </div>
-              <h4 className="font-bold">Dynamic Routing Tip</h4>
+              <h4 className="font-bold">Dynamic Management</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                To manage the <strong>About Us</strong> or <strong>Home</strong> content, simply create or edit a page with the slug <code className="bg-primary/10 px-1 rounded">about</code> or <code className="bg-primary/10 px-1 rounded">home</code>. 
+                We have automatically identified your core pages (**About Us** and **Home**).
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed pt-2">
-                The system will automatically prioritize CMS content over default layouts when a match is found.
+                Editing these pages here and setting them to **"Published"** will instantly override the default static content on the site.
               </p>
             </CardContent>
           </Card>
