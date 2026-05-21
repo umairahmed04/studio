@@ -23,7 +23,8 @@ import {
   Sparkles,
   HelpCircle,
   Activity,
-  Layers
+  Layers,
+  Globe
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +63,7 @@ export default function PageEditor() {
         ...saveData,
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Page Saved", description: "Metadata updated successfully." });
+      toast({ title: "Page Saved", description: "Metadata and status updated." });
     } catch (error) {
       console.error("Page Save Error:", error);
       toast({ variant: "destructive", title: "Error", description: "Failed to save settings." });
@@ -95,7 +96,7 @@ export default function PageEditor() {
   };
 
   if (pageLoading || !formData) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
   }
 
   return (
@@ -105,52 +106,58 @@ export default function PageEditor() {
           <Button variant="ghost" size="icon" onClick={() => router.push('/admin/pages')}><ArrowLeft size={20} /></Button>
           <div>
             <h1 className="text-xl font-bold">{formData.title}</h1>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-black">Editor Mode</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Page Management Editor</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/${formData.slug === 'home' ? '' : formData.slug}`} target="_blank" className="font-bold">Preview Page</a>
+          <Button variant="outline" size="sm" asChild className="font-bold">
+            <a href={`/${formData.slug === 'home' ? '' : formData.slug}`} target="_blank">Preview Live</a>
           </Button>
-          <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold">
-            {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-            Save Settings
+          <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold shadow-lg shadow-primary/20">
+            {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
+            Publish Changes
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="sections">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="sections"><Layout size={16} className="mr-2" /> Content Builder</TabsTrigger>
-          <TabsTrigger value="settings"><Settings size={16} className="mr-2" /> Page Settings</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 max-w-md h-12 bg-muted/50 p-1 rounded-xl">
+          <TabsTrigger value="sections" className="font-bold text-xs uppercase"><Layout size={16} className="mr-2" /> Content Builder</TabsTrigger>
+          <TabsTrigger value="settings" className="font-bold text-xs uppercase"><Settings size={16} className="mr-2" /> Slugs & SEO</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sections" className="pt-6 space-y-6">
           <div className="grid grid-cols-1 gap-6">
             {sectionsLoading ? (
               <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>
-            ) : sections?.length === 0 ? (
-              <div className="text-center p-20 border-2 border-dashed rounded-3xl bg-muted/20">
-                <p className="text-muted-foreground mb-4">This page is using hardcoded content or has no dynamic sections.</p>
+            ) : (
+              <div className="space-y-4">
+                {sections?.map((section: any) => (
+                  <SectionEditor 
+                    key={section.id} 
+                    section={section} 
+                    onUpdate={(data) => updateSection(section.id, data)}
+                    onDelete={() => deleteSection(section.id)}
+                  />
+                ))}
               </div>
-            ) : sections?.map((section: any) => (
-              <SectionEditor 
-                key={section.id} 
-                section={section} 
-                onUpdate={(data) => updateSection(section.id, data)}
-                onDelete={() => deleteSection(section.id)}
-              />
-            ))}
+            )}
             
-            <Card className="border-dashed border-2 bg-muted/5">
-              <CardContent className="p-8 text-center space-y-4">
-                <h4 className="font-bold">Add Dynamic Section</h4>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => addSection('hero')}><Sparkles size={14} className="mr-1" /> Hero</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('about')}><HelpCircle size={14} className="mr-1" /> About</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('features')}><Layers size={14} className="mr-1" /> Features</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('faq')}><Activity size={14} className="mr-1" /> FAQ</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('cta')}><Plus size={14} className="mr-1" /> CTA</Button>
+            <Card className="border-dashed border-2 bg-muted/5 rounded-2xl">
+              <CardContent className="p-12 text-center space-y-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
+                  <Plus size={24} />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold">Add Dynamic Section</h4>
+                  <p className="text-xs text-muted-foreground">Select a high-performance section to append to your page.</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => addSection('hero')} className="font-bold"><Sparkles size={14} className="mr-2" /> Hero</Button>
+                  <Button variant="outline" size="sm" onClick={() => addSection('about')} className="font-bold"><HelpCircle size={14} className="mr-2" /> About</Button>
+                  <Button variant="outline" size="sm" onClick={() => addSection('features')} className="font-bold"><Layers size={14} className="mr-2" /> Features</Button>
+                  <Button variant="outline" size="sm" onClick={() => addSection('faq')} className="font-bold"><Activity size={14} className="mr-2" /> FAQ</Button>
+                  <Button variant="outline" size="sm" onClick={() => addSection('cta')} className="font-bold"><Plus size={14} className="mr-2" /> CTA</Button>
                 </div>
               </CardContent>
             </Card>
@@ -158,29 +165,37 @@ export default function PageEditor() {
         </TabsContent>
 
         <TabsContent value="settings" className="pt-6 space-y-6">
-          <Card>
+          <Card className="border-white/5 bg-card/50">
             <CardHeader>
-              <CardTitle>Page Metadata</CardTitle>
-              <CardDescription>Configure URLs and indexing settings.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="text-primary" size={20} />
+                Indexing & Visibility
+              </CardTitle>
+              <CardDescription>Configure URLs and publication status.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Display Title</label>
-                  <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Internal Title</label>
+                  <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="h-11 font-bold" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">URL Slug</label>
-                  <Input value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} />
+                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">URL Slug (URL segment)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground opacity-40 font-bold">/</span>
+                    <Input value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} className="pl-6 h-11 font-mono text-sm" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Publication Status</label>
+                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Live Status</label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft (Admin Only)</SelectItem>
-                    <SelectItem value="published">Published (Public)</SelectItem>
+                    <SelectItem value="draft">Draft (Visible to Admins Only)</SelectItem>
+                    <SelectItem value="published">Published (Live to Public)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -200,30 +215,32 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
   };
 
   return (
-    <Card className="overflow-hidden border-primary/10">
-      <div className="bg-muted/30 px-4 py-3 flex items-center justify-between border-b">
-        <div className="flex items-center gap-3">
-          <GripVertical size={16} className="text-muted-foreground cursor-grab" />
-          <Badge variant="secondary" className="uppercase text-[10px] font-black">{section.type}</Badge>
-          <span className="text-sm font-bold opacity-60">Order {section.order}</span>
+    <Card className="overflow-hidden border-white/5 bg-card/50 transition-all hover:border-primary/20">
+      <div className="bg-muted/30 px-6 py-4 flex items-center justify-between border-b border-white/5">
+        <div className="flex items-center gap-4">
+          <GripVertical size={16} className="text-muted-foreground cursor-grab opacity-40" />
+          <Badge variant="secondary" className="uppercase text-[10px] font-black tracking-widest bg-primary/10 text-primary border-none">
+            {section.type}
+          </Badge>
+          <span className="text-[10px] font-black uppercase text-muted-foreground opacity-60">Order {section.order}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setExpanded(!expanded)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpanded(!expanded)}>
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={onDelete}><Trash2 size={16} /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={onDelete}><Trash2 size={16} /></Button>
         </div>
       </div>
       
       {expanded && (
-        <CardContent className="p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <CardContent className="p-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Section Heading</label>
-            <Input value={section.content?.heading || section.content?.title || ''} onChange={(e) => handleContentUpdate('heading', e.target.value)} />
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Heading / Primary Text</label>
+            <Input value={section.content?.heading || section.content?.title || ''} onChange={(e) => handleContentUpdate('heading', e.target.value)} className="h-11 font-bold" />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Section Body / Description</label>
-            <Textarea value={section.content?.subheading || section.content?.description || ''} onChange={(e) => handleContentUpdate('description', e.target.value)} />
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Description / Body Content</label>
+            <Textarea value={section.content?.subheading || section.content?.description || ''} onChange={(e) => handleContentUpdate('description', e.target.value)} className="min-h-[120px] text-sm leading-relaxed" />
           </div>
         </CardContent>
       )}
@@ -233,11 +250,11 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
 
 function getInitialContent(type: string) {
   switch(type) {
-    case 'hero': return { heading: 'Welcome to our site', subheading: 'Empowering your professional growth with AI.', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup' };
-    case 'features': return { title: 'Our Core Features', items: [{ title: 'Feature 1', desc: 'Detail here', icon: 'zap' }] };
+    case 'hero': return { heading: 'Enter Heading', subheading: 'Provide a compelling subheading.', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup' };
+    case 'features': return { title: 'Core Features', items: [{ title: 'Feature 1', desc: 'Detail here', icon: 'zap' }] };
     case 'faq': return { title: 'Common Questions', items: [{ question: 'What is this?', answer: 'It is an AI platform.' }] };
-    case 'about': return { title: 'About Our Platform', description: '<p>Learn more about us here.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
-    case 'cta': return { title: 'Ready to optimize?', description: 'Join 50k+ users today.', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
+    case 'about': return { title: 'About Us', description: '<p>Tell your story here.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
+    case 'cta': return { title: 'Ready to optimize?', description: 'Join today.', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
     default: return {};
   }
 }

@@ -22,7 +22,7 @@ const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Platform Analytics', href: '/admin/analytics', icon: Activity },
   { name: 'Blog Management', href: '/admin/blog', icon: FileText },
-  { name: 'Page SEO', href: '/admin/pages', icon: FileSearch },
+  { name: 'Page Management', href: '/admin/pages', icon: FileSearch },
   { name: 'User Directory', href: '/admin/users', icon: Users },
   { name: 'AI Tool Control', href: '/admin/tools', icon: Wand2 },
   { name: 'CV Templates', href: '/admin/templates', icon: Layout },

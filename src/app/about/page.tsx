@@ -1,14 +1,48 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { PageRenderer } from '@/components/cms/PageRenderer';
 import { ToolLayout } from '@/components/tools/ToolLayout';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Target, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { Users, Target, ShieldCheck, Heart, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'About Us | Our Mission to Empower Job Seekers | ATSResumeScan',
-  description: 'Learn how ATSResumeScan uses cutting-edge AI to level the playing field for job seekers worldwide by beating recruitment bots.',
-};
-
+/**
+ * @fileOverview About Us Page with dynamic CMS prioritization.
+ * If a CMS page with slug "about" exists and is published, it overrides the static layout.
+ */
 export default function AboutPage() {
+  const db = useFirestore();
+
+  const aboutQuery = useMemo(() => {
+    if (!db) return null;
+    return query(
+      collection(db, 'pages'), 
+      where('slug', '==', 'about'), 
+      where('status', '==', 'published'),
+      limit(1)
+    );
+  }, [db]);
+
+  const { data: cmsPages, loading } = useCollection(aboutQuery);
+  const cmsPage = cmsPages?.[0];
+
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // 1. If CMS Content exists, prioritize it
+  if (cmsPage) {
+    return <PageRenderer pageId={cmsPage.id} />;
+  }
+
+  // 2. Fallback to the High-Tier Professional Static Layout
   return (
     <ToolLayout 
       title="Leveling the Recruitment Playing Field" 
