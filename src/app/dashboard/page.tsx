@@ -68,7 +68,7 @@ export default function Dashboard() {
     return query(
       collection(db, 'users', user.uid, 'activityLog'),
       orderBy('timestamp', 'desc'),
-      limit(10)
+      limit(20)
     );
   }, [db, user]);
 
@@ -232,47 +232,65 @@ export default function Dashboard() {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <Card className="glass border-white/5">
+            <Card className="glass border-white/5 h-fit">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <History size={18} className="text-primary" />
                   Activity Timeline
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {activityLoading ? (
-                  <div className="flex justify-center p-4"><Loader2 className="animate-spin h-4 w-4" /></div>
-                ) : activities?.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No recent history.</p>
-                ) : (
-                  activities?.map((activity) => (
-                    <div key={activity.id} className="flex gap-4 group">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-white/10 ${getActivityColor(activity.type)}`}>
-                          {getActivityIcon(activity.type)}
+              <CardContent>
+                <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar space-y-6">
+                  {activityLoading ? (
+                    <div className="flex justify-center p-4"><Loader2 className="animate-spin h-4 w-4" /></div>
+                  ) : activities?.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No recent history.</p>
+                  ) : (
+                    activities?.map((activity) => (
+                      <div key={activity.id} className="flex gap-4 group">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-white/10 ${getActivityColor(activity.type)}`}>
+                            {getActivityIcon(activity.type)}
+                          </div>
+                          <div className="w-0.5 h-full bg-muted mt-2 group-last:hidden" />
                         </div>
-                        <div className="w-0.5 h-full bg-muted mt-2 group-last:hidden" />
+                        <div className="flex-1 pb-4">
+                          <p className="text-sm font-bold leading-none">
+                            {getActivityTitle(activity.type)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {activity.details?.title || 'System action'}
+                          </p>
+                          <p className="text-[10px] font-black uppercase text-primary/60 mt-1.5 flex items-center gap-1">
+                            <Clock size={10} />
+                            {activity.timestamp?.toDate ? formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 pb-4">
-                        <p className="text-sm font-bold leading-none">
-                          {getActivityTitle(activity.type)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {activity.details?.title || 'System action'}
-                        </p>
-                        <p className="text-[10px] font-black uppercase text-primary/60 mt-1.5 flex items-center gap-1">
-                          <Clock size={10} />
-                          {activity.timestamp?.toDate ? formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true }) : 'Recently'}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: hsl(var(--primary) / 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--primary) / 0.2);
+        }
+      `}</style>
     </div>
   );
 }
