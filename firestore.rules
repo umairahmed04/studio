@@ -1,0 +1,72 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor'];
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isOwner(userId) || isAdmin();
+      
+      match /cvs/{cvId} {
+        // Allow public read for sharing link functionality
+        allow read: if true; 
+        allow write: if isOwner(userId);
+      }
+      
+      match /activityLog/{logId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId);
+      }
+
+      match /resumes/{resumeId} {
+        // Allow public read for sharing link functionality (backward compatibility)
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+      match /scans/{scanId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /photos/{photoId} {
+        allow read: if true; 
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // Explicit collectionGroup rules for public CV sharing
+    match /{path=**}/cvs/{cvId} {
+      allow read: if true;
+    }
+    match /{path=**}/resumes/{cvId} {
+      allow read: if true;
+    }
+
+    match /cv_templates/{templateId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+       allow read: if true;
+       allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

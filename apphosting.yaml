@@ -1,0 +1,8 @@
+# Firebase App Hosting Configuration
+# Reset to baseline state for fresh repository link
+
+runConfig:
+  maxInstances: 1
+
+# Metadata will be re-detected upon linking to 
+# the new GitHub repository.

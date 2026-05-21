@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Basic information about the application user including their role and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "editor"] },
+        "status": { "type": "string", "enum": ["active", "blocked"] },
+        "favorites": { "type": "array", "items": { "type": "string" } },
+        "username": { "type": "string" },
+        "publicProfileEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "InterviewSession": {
+      "title": "Interview Session",
+      "description": "A mock interview session with AI generated questions and feedback.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "jobTitle": { "type": "string" },
+        "type": { "type": "string", "enum": ["HR", "Technical", "Managerial", "Behavioral"] },
+        "questions": { "type": "array", "items": { "type": "object" } },
+        "score": { "type": "object" },
+        "feedback": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
+    },
+    "/users/{userId}/interviews/{sessionId}": {
+      "schema": "InterviewSession",
+      "description": "Historical interview sessions."
+    },
+    "/usernames/{username}": {
+      "schema": "object",
+      "description": "Mapping of unique usernames to user IDs."
+    }
+  }
+}

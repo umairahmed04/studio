@@ -1,0 +1,119 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "blog1",
+      "description": "ATS Resume Format",
+      "imageUrl": "https://picsum.photos/seed/blog1/800/600",
+      "imageHint": "Modern Office"
+    },
+    {
+      "id": "blog2",
+      "description": "Resume Rejection",
+      "imageUrl": "https://picsum.photos/seed/blog2/800/600",
+      "imageHint": "Frustrated candidate"
+    },
+    {
+      "id": "blog3",
+      "description": "UAE Jobs",
+      "imageUrl": "https://picsum.photos/seed/blog3/800/600",
+      "imageHint": "Dubai skyline"
+    },
+    {
+      "id": "blog4",
+      "description": "Recruiter Scanning",
+      "imageUrl": "https://picsum.photos/seed/blog4/800/600",
+      "imageHint": "Recruiter desk"
+    },
+    {
+      "id": "team",
+      "description": "Our Team",
+      "imageUrl": "https://picsum.photos/seed/team/800/800",
+      "imageHint": "Business team"
+    },
+    {
+      "id": "person1",
+      "description": "Success Story 1 - Alex Rivera",
+      "imageUrl": "https://picsum.photos/seed/alex-rivera/200/200",
+      "imageHint": "Professional man"
+    },
+    {
+      "id": "person2",
+      "description": "Success Story 2 - Sarah Chen",
+      "imageUrl": "https://picsum.photos/seed/sarah-chen/200/200",
+      "imageHint": "Professional woman"
+    },
+    {
+      "id": "person3",
+      "description": "Success Story 3 - Michael Knight",
+      "imageUrl": "https://picsum.photos/seed/michael-knight/200/200",
+      "imageHint": "Confident professional"
+    },
+    {
+      "id": "person4",
+      "description": "Success Story 4 - Priya Sharma",
+      "imageUrl": "https://picsum.photos/seed/priya-sharma/200/200",
+      "imageHint": "Smiling executive"
+    },
+    {
+      "id": "person5",
+      "description": "Success Story 5 - James Wilson",
+      "imageUrl": "https://picsum.photos/seed/james-wilson/200/200",
+      "imageHint": "Tech professional"
+    },
+    {
+      "id": "person6",
+      "description": "Success Story 6 - Li Wei",
+      "imageUrl": "https://picsum.photos/seed/li-wei/200/200",
+      "imageHint": "Business executive"
+    },
+    {
+      "id": "person7",
+      "description": "Success Story 7 - Amara Okafor",
+      "imageUrl": "https://picsum.photos/seed/amara-okafor/200/200",
+      "imageHint": "Young professional"
+    },
+    {
+      "id": "person8",
+      "description": "Success Story 8 - Carlos Mendez",
+      "imageUrl": "https://picsum.photos/seed/carlos-mendez/200/200",
+      "imageHint": "Corporate leader"
+    },
+    {
+      "id": "tpl-professional",
+      "description": "Executive Resume Template",
+      "imageUrl": "https://picsum.photos/seed/res1/600/800",
+      "imageHint": "resume template"
+    },
+    {
+      "id": "tpl-modern",
+      "description": "Silicon Valley Template",
+      "imageUrl": "https://picsum.photos/seed/res2/600/800",
+      "imageHint": "modern cv"
+    },
+    {
+      "id": "tpl-hybrid",
+      "description": "Creative Pro Template",
+      "imageUrl": "https://picsum.photos/seed/res3/600/800",
+      "imageHint": "creative resume"
+    },
+    {
+      "id": "tpl-minimalist",
+      "description": "Clean Minimalist Template",
+      "imageUrl": "https://picsum.photos/seed/res4/600/800",
+      "imageHint": "minimalist cv"
+    },
+    {
+      "id": "tpl-academic",
+      "description": "Academic CV Template",
+      "imageUrl": "https://picsum.photos/seed/res5/600/800",
+      "imageHint": "academic cv"
+    },
+    {
+      "id": "tpl-marketing",
+      "description": "Marketing Elite Template",
+      "imageUrl": "https://picsum.photos/seed/res6/600/800",
+      "imageHint": "professional resume"
+    }
+  ]
+}
