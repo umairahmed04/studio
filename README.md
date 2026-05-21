@@ -21,6 +21,19 @@ npm run repo:nuke
 
 ---
 
+# 🔑 FIX: Firebase Unauthorized Domain Error
+
+If you see a `FirebaseError: auth/unauthorized-domain` error during Google Login:
+
+1. Copy your current browser URL domain (e.g., `9002-....workstations.google.com`).
+2. Go to [Firebase Console](https://console.firebase.google.com/).
+3. Select your project.
+4. Go to **Authentication** > **Settings** > **Authorized Domains**.
+5. Click **Add Domain** and paste your workstation domain.
+6. Save and try logging in again.
+
+---
+
 ## 🌐 Deployment
 Once published:
 1. Go to the [Firebase Console](https://console.firebase.google.com/).

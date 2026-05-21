@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, Lock, Scan, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, Scan, Sparkles, AlertCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<React.ReactNode | null>(null);
 
   const syncUserProfile = async (user: any) => {
     if (!db) return;
@@ -61,13 +61,26 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      console.error("Google Auth Error:", error);
-      let message = error.message;
+      // Do not use console.error as it triggers Next.js error overlays in dev
+      let message: React.ReactNode = error.message;
+      
       if (error.code === 'auth/unauthorized-domain') {
-        message = "This domain is not authorized. Please add it to 'Authorized Domains' in Firebase Console.";
+        message = (
+          <div className="space-y-3">
+            <p><strong>Configuration Required:</strong> This domain is not authorized in your Firebase Project.</p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Go to <strong>Firebase Console</strong></li>
+              <li>Authentication &gt; Settings &gt; <strong>Authorized Domains</strong></li>
+              <li>Add: <code className="bg-muted px-1 rounded">{window.location.hostname}</code></li>
+            </ol>
+          </div>
+        );
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = "The sign-in window was closed before completion.";
       }
+      
       setErrorMsg(message);
-      toast({ variant: "destructive", title: "Sign in failed", description: message });
+      toast({ variant: "destructive", title: "Sign in failed" });
     } finally {
       setLoading(false);
     }
@@ -86,7 +99,6 @@ export default function LoginPage() {
       toast({ title: "Success", description: "Logged in successfully." });
       router.push('/dashboard');
     } catch (error: any) {
-      console.error("Email Auth Error:", error);
       let message = "Invalid email or password.";
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
         if (email === 'itexpert47@gmail.com') {
@@ -133,9 +145,11 @@ export default function LoginPage() {
 
         {errorMsg && (
           <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{errorMsg}</AlertDescription>
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <AlertTitle>Action Required</AlertTitle>
+              <AlertDescription className="text-xs mt-1">{errorMsg}</AlertDescription>
+            </div>
           </Alert>
         )}
 

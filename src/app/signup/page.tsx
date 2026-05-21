@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -12,6 +12,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function SignupPage() {
   const auth = useAuth();
@@ -22,6 +23,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [errorMsg, setErrorMsg] = useState<React.ReactNode | null>(null);
 
   const createUserProfile = async (user: any, name?: string) => {
     if (!db) return;
@@ -41,6 +43,7 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setLoading(true);
+    setErrorMsg(null);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -50,12 +53,21 @@ export default function SignupPage() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      console.error("Signup Google Error:", error);
-      let message = error.message;
+      let message: React.ReactNode = error.message;
       if (error.code === 'auth/unauthorized-domain') {
-        message = "This domain is not authorized. Please add it in Firebase Console.";
+        message = (
+          <div className="space-y-3">
+            <p><strong>Setup Required:</strong> Your current domain is not authorized in Firebase.</p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Open <strong>Firebase Console</strong></li>
+              <li>Authentication &gt; Settings &gt; <strong>Authorized Domains</strong></li>
+              <li>Add this domain: <code className="bg-muted px-1 rounded">{window.location.hostname}</code></li>
+            </ol>
+          </div>
+        );
       }
-      toast({ variant: "destructive", title: "Signup failed", description: message });
+      setErrorMsg(message);
+      toast({ variant: "destructive", title: "Signup failed" });
     } finally {
       setLoading(false);
     }
@@ -67,6 +79,7 @@ export default function SignupPage() {
     if (!email || !password) return;
     
     setLoading(true);
+    setErrorMsg(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (displayName) {
@@ -76,8 +89,8 @@ export default function SignupPage() {
       toast({ title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
     } catch (error: any) {
-      console.error("Signup Email Error:", error);
-      toast({ variant: "destructive", title: "Signup Error", description: error.message });
+      setErrorMsg(error.message);
+      toast({ variant: "destructive", title: "Signup Error" });
     } finally {
       setLoading(false);
     }
@@ -100,6 +113,16 @@ export default function SignupPage() {
           <h1 className="text-3xl font-headline font-bold tracking-tight">Create Account</h1>
           <p className="text-muted-foreground mt-2">Join thousands of job seekers optimizing their success.</p>
         </div>
+
+        {errorMsg && (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <AlertTitle>Configuration Required</AlertTitle>
+              <AlertDescription className="text-xs mt-1">{errorMsg}</AlertDescription>
+            </div>
+          </Alert>
+        )}
 
         <Card className="glass shadow-2xl border-white/10">
           <CardContent className="pt-8 space-y-6">
