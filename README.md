@@ -1,15 +1,3 @@
-# 🛑 FIX: Divergent Branches / Git Sync Error 🚀
-
-If you see an error like `fatal: Need to specify how to reconcile divergent branches`, run this in your terminal:
-
-```bash
-npm run repo:fix-sync
-```
-
-This tells Git to merge the two versions of your code instead of failing. After running this, the "Sync" button in the IDE will work correctly.
-
----
-
 # 🛑 FIX: Disappearing GitHub Popup 🚀
 
 **If the "Publish to GitHub" button opens a window that hides instantly, follow these steps exactly.**
@@ -30,19 +18,6 @@ npm run repo:nuke
 1. Click the **"Source Control"** icon in the left sidebar.
 2. Click the blue **"Publish to GitHub"** button.
 3. Because you allowed popups and nuked the old state, the login window will now stay open correctly.
-
----
-
-# 🔑 FIX: Firebase Unauthorized Domain Error
-
-If you see a `FirebaseError: auth/unauthorized-domain` error during Google Login:
-
-1. Copy your current browser URL domain (e.g., `9002-....workstations.google.com`).
-2. Go to [Firebase Console](https://console.firebase.google.com/).
-3. Select your project.
-4. Go to **Authentication** > **Settings** > **Authorized Domains**.
-5. Click **Add Domain** and paste your workstation domain.
-6. Save and try logging in again.
 
 ---
 
