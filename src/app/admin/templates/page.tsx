@@ -98,13 +98,14 @@ export default function TemplateManagement() {
 
     setUploading(true);
     try {
-      const path = `templates/${Date.now()}-${file.name}`;
+      const path = `templates/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       const storageRef = ref(storage, path);
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
       setFormData({ ...formData, customImageUrl: url });
       toast({ title: "Image Uploaded", description: "Preview image has been set." });
     } catch (error) {
+      console.error("Upload Error:", error);
       toast({ variant: "destructive", title: "Upload Failed" });
     } finally {
       setUploading(false);
@@ -144,7 +145,7 @@ export default function TemplateManagement() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase text-muted-foreground">Fallback Image</label>
+                    <label className="text-xs font-bold uppercase text-muted-foreground">Fallback Icon</label>
                     <select 
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={formData.imageId}
@@ -173,8 +174,8 @@ export default function TemplateManagement() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-muted-foreground flex justify-between">
-                    Featured Image
-                    <span className="text-[10px] opacity-60">Upload or insert link</span>
+                    Thumbnail Image
+                    <span className="text-[10px] opacity-60">Upload file or link</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -198,12 +199,12 @@ export default function TemplateManagement() {
                   </div>
                 </div>
                 {formData.customImageUrl && (
-                  <div className="aspect-[4/3] relative rounded-lg overflow-hidden border bg-muted/50">
+                  <div className="aspect-[3/4] max-h-[160px] relative rounded-lg overflow-hidden border bg-muted/50 group/preview">
                     <img src={formData.customImageUrl} alt="Preview" className="object-cover w-full h-full" />
                     <Button 
                       variant="destructive" 
                       size="icon" 
-                      className="absolute top-2 right-2 h-7 w-7"
+                      className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover/preview:opacity-100 transition-opacity"
                       onClick={() => setFormData({...formData, customImageUrl: ''})}
                     >
                       <X size={14} />
@@ -251,7 +252,7 @@ export default function TemplateManagement() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-bold uppercase">{tpl.category || 'Corporate'}</Badge>
-                {tpl.customImageUrl && <Badge variant="outline" className="text-[9px] uppercase border-green-500/30 text-green-600">Dynamic Image</Badge>}
+                {tpl.customImageUrl && <Badge variant="outline" className="text-[9px] uppercase border-green-500/30 text-green-600">Custom Visual</Badge>}
               </div>
             </CardContent>
           </Card>
