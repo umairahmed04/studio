@@ -50,14 +50,10 @@ export default function TemplatesPage() {
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Fetch Templates
+  // Fetch Templates - Simplified query to avoid Index requirements for combined where/orderBy
   const templatesQuery = useMemo(() => {
     if (!db) return null;
-    return query(
-      collection(db, 'cv_templates'), 
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
-    );
+    return query(collection(db, 'cv_templates'));
   }, [db]);
 
   const { data: templates, loading } = useCollection(templatesQuery);
@@ -89,15 +85,26 @@ export default function TemplatesPage() {
 
   const filteredTemplates = useMemo(() => {
     if (!templates) return [];
-    let list = templates.filter(t => 
-      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    
+    // 1. Client-side sort by date
+    const sorted = [...templates].sort((a: any, b: any) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return dateB - dateA;
+    });
 
-    if (activeCategory !== "All") {
-      list = list.filter(t => t.category === activeCategory || t.tags?.includes(activeCategory));
-    }
+    // 2. Filter by active status and search/category
+    let list = sorted.filter(t => {
+      const isActive = t.status === 'active';
+      const matchesSearch = 
+        (t.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.tags || []).some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = activeCategory === "All" || t.category === activeCategory || (t.tags || []).includes(activeCategory);
+
+      return isActive && matchesSearch && matchesCategory;
+    });
 
     // Limit for guests
     if (!user) return list.slice(0, 6);
