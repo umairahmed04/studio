@@ -38,14 +38,17 @@ import { FileUploadZone } from '@/components/tools/FileUploadZone';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Label } from "@/components/ui/label";
+import { useRouter } from 'next/navigation';
 
 export default function ATSResumeChecker() {
   const [resumeText, setResumeText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AtsCompatibilityAnalysisOutput | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const { user } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleAnalyze = async () => {
     if (!resumeText.trim()) return;
@@ -58,7 +61,13 @@ export default function ATSResumeChecker() {
       
       setResult(output);
 
+      // System Upgrade: Sync to Session & Firestore
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('last_extracted_cv', resumeText);
+      }
+
       if (user && db) {
+        setSyncing(true);
         const scanRef = collection(db, 'users', user.uid, 'scans');
         addDoc(scanRef, {
           title: resumeText.slice(0, 30) + '...',
@@ -76,7 +85,32 @@ export default function ATSResumeChecker() {
           errorEmitter.emit('permission-error', permissionError);
         });
 
-        // Log to activity timeline
+        // Auto-provision a "Draft" CV for seamless Builder transition
+        const cvRef = collection(db, 'users', user.uid, 'cvs');
+        const docRef = await addDoc(cvRef, {
+          title: `Scanned CV (${new Date().toLocaleDateString()})`,
+          templateId: 'professional',
+          content: {
+            personalInfo: { 
+              fullName: user.displayName || '', 
+              email: user.email || '', 
+              phone: '', 
+              location: '', 
+              summary: resumeText 
+            },
+            experience: [],
+            education: [],
+            skills: { technical: output.found_keywords, soft: [], tools: [] },
+            projects: []
+          },
+          settings: { dateFormat: 'MM/YYYY', colorAccent: '#3b82f6' },
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          status: 'draft'
+        });
+        
+        sessionStorage.setItem('active_cv_id', docRef.id);
+
         addDoc(collection(db, 'users', user.uid, 'activityLog'), {
           type: 'optimize',
           timestamp: serverTimestamp(),
@@ -85,11 +119,12 @@ export default function ATSResumeChecker() {
             title: `ATS Audit (Score: ${output.score})`
           }
         });
+        setSyncing(false);
       }
       
       toast({
         title: "Scan Complete",
-        description: "Your ATS audit has been generated."
+        description: "Your ATS audit has been generated and synced."
       });
     } catch (error: any) {
       toast({
@@ -100,6 +135,15 @@ export default function ATSResumeChecker() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOptimizeRedirect = () => {
+    if (!user) {
+      router.push('/login?redirect=/resume-optimizer');
+      return;
+    }
+    const cvId = sessionStorage.getItem('active_cv_id');
+    router.push(`/resume-optimizer${cvId ? `?cvId=${cvId}` : ''}`);
   };
 
   return (
@@ -227,11 +271,9 @@ export default function ATSResumeChecker() {
                         Automatically rewrite your CV to address these {result.weaknesses.length} weaknesses and boost your score.
                       </p>
                     </div>
-                    <Button asChild size="lg" variant="secondary" className="font-bold px-8 shadow-2xl group-hover:scale-105 transition-transform">
-                      <Link href={user ? "/resume-optimizer" : "/login?redirect=/resume-optimizer"}>
-                        {user ? <><Wand2 size={18} className="mr-2" /> Optimize My CV</> : <><LogIn size={18} className="mr-2" /> Sign In to Optimize</>}
-                        <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Link>
+                    <Button onClick={handleOptimizeRedirect} size="lg" variant="secondary" className="font-bold px-8 shadow-2xl group-hover:scale-105 transition-transform">
+                      {syncing ? <Loader2 className="animate-spin mr-2" /> : user ? <><Wand2 size={18} className="mr-2" /> Optimize My CV</> : <><LogIn size={18} className="mr-2" /> Sign In to Optimize</>}
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </div>
                 </CardContent>

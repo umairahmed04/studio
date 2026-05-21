@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useEffect, useState } from 'react';
@@ -142,6 +143,12 @@ export default function CVBuilderDashboard() {
       return;
     }
     toast({ title: "Importing...", description: "Mapping details to the builder." });
+    
+    // System Upgrade: Global Sync on Import
+    if (typeof window !== 'undefined') {
+        sessionStorage.setItem('last_extracted_cv', text);
+    }
+
     await handleCreateNew('professional', {
       personalInfo: { fullName: user?.displayName || '', email: user?.email || '', phone: '', location: '', summary: text },
       experience: [], education: [], skills: { technical: [], soft: [], tools: [] }, certifications: []

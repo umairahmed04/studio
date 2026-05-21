@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ToolLayout } from '@/components/tools/ToolLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,9 @@ import { optimizeResume, type ResumeOptimizerOutput } from '@/ai/flows/resume-op
 import { Sparkles, Loader2, Copy, CheckCircle2, Wand2, FileText, X, FileEdit, FileDown, Download, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FileUploadZone } from '@/components/tools/FileUploadZone';
-import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { useFirestore, useUser, useDoc } from '@/firebase';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function ResumeOptimizer() {
@@ -25,6 +25,26 @@ export default function ResumeOptimizer() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cvIdParam = searchParams.get('cvId');
+
+  // Load existing CV if provided
+  const cvRef = (user && db && cvIdParam) ? doc(db, 'users', user.uid, 'cvs', cvIdParam) : null;
+  const { data: existingCv } = useDoc(cvRef);
+
+  useEffect(() => {
+    // 1. Check for incoming Firestore CV
+    if (existingCv && !resumeContent) {
+      setResumeContent(existingCv.content?.personalInfo?.summary || '');
+    }
+    // 2. Check for temporary session scan
+    else if (!resumeContent && typeof window !== 'undefined') {
+      const sessionContent = sessionStorage.getItem('last_extracted_cv');
+      if (sessionContent) {
+        setResumeContent(sessionContent);
+      }
+    }
+  }, [existingCv, resumeContent]);
 
   const handleOptimize = async () => {
     if (!resumeContent.trim()) return;
@@ -36,7 +56,14 @@ export default function ResumeOptimizer() {
       });
       setResult(output);
 
-      // Log activity
+      // System Upgrade: Auto-save back to Firestore if cvId exists
+      if (cvRef) {
+        updateDoc(cvRef, {
+          'content.personalInfo.summary': output.optimizedResumeContent,
+          updatedAt: serverTimestamp()
+        });
+      }
+
       if (user && db) {
         addDoc(collection(db, 'users', user.uid, 'activityLog'), {
           type: 'optimize',
@@ -89,47 +116,53 @@ export default function ResumeOptimizer() {
 
     setExporting(true);
     try {
-      const resumeRef = collection(db, 'users', user.uid, 'resumes');
-      const docRef = await addDoc(resumeRef, {
-        userId: user.uid,
-        title: `Optimized Resume (${new Date().toLocaleDateString()})`,
-        templateId: 'professional',
-        content: {
-          personalInfo: { 
-            fullName: user.displayName || '', 
-            email: user.email || '', 
-            phone: '', 
-            location: '', 
-            summary: result.optimizedResumeContent 
+      let docId = cvIdParam;
+
+      if (!docId) {
+        const resumeRef = collection(db, 'users', user.uid, 'cvs');
+        const docRef = await addDoc(resumeRef, {
+          userId: user.uid,
+          title: `Optimized Resume (${new Date().toLocaleDateString()})`,
+          templateId: 'professional',
+          content: {
+            personalInfo: { 
+              fullName: user.displayName || '', 
+              email: user.email || '', 
+              phone: '', 
+              location: '', 
+              summary: result.optimizedResumeContent 
+            },
+            experience: [],
+            education: [],
+            skills: { technical: [], soft: [], tools: [] },
+            projects: []
           },
-          experience: [],
-          education: [],
-          skills: { technical: [], soft: [], tools: [] },
-          projects: []
-        },
-        settings: { dateFormat: 'MM/YYYY', colorAccent: '#3b82f6' },
-        updatedAt: serverTimestamp()
-      });
-      
-      addDoc(collection(db, 'users', user.uid, 'activityLog'), {
-        type: 'create',
-        cvId: docRef.id,
-        timestamp: serverTimestamp(),
-        details: { title: 'Imported from AI Optimizer' }
-      });
+          settings: { dateFormat: 'MM/YYYY', colorAccent: '#3b82f6' },
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp()
+        });
+        docId = docRef.id;
+
+        addDoc(collection(db, 'users', user.uid, 'activityLog'), {
+          type: 'create',
+          cvId: docRef.id,
+          timestamp: serverTimestamp(),
+          details: { title: 'Imported from AI Optimizer' }
+        });
+      }
 
       toast({
-        title: "Exported successfully",
-        description: "Taking you to the CV Builder to choose a template."
+        title: "Sync Successful",
+        description: "Taking you to the CV Builder with your optimized content."
       });
       
-      router.push(`/cv-builder/${docRef.id}`);
+      router.push(`/cv-builder/${docId}`);
     } catch (error) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Export failed",
-        description: "Could not create a resume entry. Please try again."
+        description: "Could not sync to builder. Please try again."
       });
     } finally {
       setExporting(false);
@@ -169,7 +202,10 @@ export default function ResumeOptimizer() {
                     variant="ghost" 
                     size="icon" 
                     className="absolute top-2 right-2 h-6 w-6 rounded-full bg-background/80"
-                    onClick={() => setResumeContent('')}
+                    onClick={() => {
+                        setResumeContent('');
+                        if(typeof window !== 'undefined') sessionStorage.removeItem('last_extracted_cv');
+                    }}
                   >
                     <X size={14} />
                   </Button>
