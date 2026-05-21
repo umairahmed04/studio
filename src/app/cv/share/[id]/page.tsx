@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -200,10 +201,10 @@ function ResumeRenderer({ data }: { data: any }) {
   
   return (
     <div className={cn(
-      "text-zinc-900 transition-all duration-500 print:text-black print:max-w-none", 
+      "text-foreground transition-all duration-500 print:text-black print:max-w-none", 
       isAcademic ? 'font-serif' : 'font-sans',
       "max-w-4xl mx-auto",
-      isMinimal && "text-zinc-600"
+      isMinimal && "text-muted-foreground"
     )} style={{ '--resume-primary': accentColor, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
       {/* HEADER */}
       <header className={cn(
