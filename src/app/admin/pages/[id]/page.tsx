@@ -29,6 +29,29 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import dynamic from 'next/dynamic';
+
+// Import Quill styles
+import 'react-quill-new/dist/quill.snow.css';
+
+// Dynamically import Quill to avoid SSR issues
+const ReactQuill = dynamic(() => import('react-quill-new'), {
+  ssr: false,
+  loading: () => <div className="h-40 w-full bg-muted animate-pulse rounded-md" />
+});
+
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    ['link', 'clean']
+  ],
+};
+
+const quillFormats = [
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'link'
+];
 
 export default function PageEditor() {
   const { id } = useParams();
@@ -57,7 +80,6 @@ export default function PageEditor() {
     if (!pageRef || !formData) return;
     setSaving(true);
     try {
-      // Stripping id to prevent Firestore conflict
       const { id: _id, ...saveData } = formData;
       await updateDoc(pageRef, {
         ...saveData,
@@ -90,7 +112,6 @@ export default function PageEditor() {
 
   const updateSection = async (sectionId: string, data: any) => {
     if (!db) return;
-    // Stripping id to prevent Firestore conflict
     const { id: _sid, ...saveData } = data;
     await updateDoc(doc(db, 'pages', id as string, 'sections', sectionId), saveData);
   };
@@ -106,7 +127,7 @@ export default function PageEditor() {
           <Button variant="ghost" size="icon" onClick={() => router.push('/admin/pages')}><ArrowLeft size={20} /></Button>
           <div>
             <h1 className="text-xl font-bold">{formData.title}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Page Management Editor</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">WordPress Style Editor</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -150,7 +171,7 @@ export default function PageEditor() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-bold">Add Dynamic Section</h4>
-                  <p className="text-xs text-muted-foreground">Select a high-performance section to append to your page.</p>
+                  <p className="text-xs text-muted-foreground">Select a section to add rich content to your page.</p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => addSection('hero')} className="font-bold"><Sparkles size={14} className="mr-2" /> Hero</Button>
@@ -194,7 +215,7 @@ export default function PageEditor() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft (Visible to Admins Only)</SelectItem>
+                    <SelectItem value="draft">Draft (Internal Only)</SelectItem>
                     <SelectItem value="published">Published (Live to Public)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -203,6 +224,20 @@ export default function PageEditor() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <style jsx global>{`
+        .quill-editor .ql-container {
+          border-bottom-left-radius: 0.5rem;
+          border-bottom-right-radius: 0.5rem;
+          min-height: 200px;
+          font-family: inherit;
+        }
+        .quill-editor .ql-toolbar {
+          border-top-left-radius: 0.5rem;
+          border-top-right-radius: 0.5rem;
+          background: hsl(var(--muted)/0.3);
+        }
+      `}</style>
     </div>
   );
 }
@@ -235,12 +270,25 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
       {expanded && (
         <CardContent className="p-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Heading / Primary Text</label>
-            <Input value={section.content?.heading || section.content?.title || ''} onChange={(e) => handleContentUpdate('heading', e.target.value)} className="h-11 font-bold" />
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Heading / Section Title</label>
+            <Input 
+              value={section.content?.heading || section.content?.title || ''} 
+              onChange={(e) => handleContentUpdate(section.content?.title ? 'title' : 'heading', e.target.value)} 
+              className="h-11 font-bold" 
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Description / Body Content</label>
-            <Textarea value={section.content?.subheading || section.content?.description || ''} onChange={(e) => handleContentUpdate('description', e.target.value)} className="min-h-[120px] text-sm leading-relaxed" />
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Body Content (WordPress Editor)</label>
+            <div className="bg-background rounded-lg border quill-editor">
+              <ReactQuill 
+                theme="snow"
+                value={section.content?.description || section.content?.subheading || ''}
+                onChange={(val) => handleContentUpdate(section.content?.subheading ? 'subheading' : 'description', val)}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Enter rich text description here..."
+              />
+            </div>
           </div>
         </CardContent>
       )}
@@ -250,11 +298,11 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
 
 function getInitialContent(type: string) {
   switch(type) {
-    case 'hero': return { heading: 'Enter Heading', subheading: 'Provide a compelling subheading.', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup' };
+    case 'hero': return { heading: 'Enter Heading', subheading: '<p>Provide a compelling subheading.</p>', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup' };
     case 'features': return { title: 'Core Features', items: [{ title: 'Feature 1', desc: 'Detail here', icon: 'zap' }] };
     case 'faq': return { title: 'Common Questions', items: [{ question: 'What is this?', answer: 'It is an AI platform.' }] };
-    case 'about': return { title: 'About Us', description: '<p>Tell your story here.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
-    case 'cta': return { title: 'Ready to optimize?', description: 'Join today.', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
+    case 'about': return { title: 'About Us', description: '<p>Tell your story here with rich formatting.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
+    case 'cta': return { title: 'Ready to optimize?', description: '<p>Join today.</p>', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
     default: return {};
   }
 }
