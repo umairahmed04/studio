@@ -135,7 +135,9 @@ export default function BlogEditor() {
         title: result.title,
         content: result.content,
         excerpt: result.metaDescription,
-        category: categories.includes(aiInputs.keyword) ? aiInputs.keyword : categories[0]
+        category: categories.includes(aiInputs.keyword) ? aiInputs.keyword : categories[0],
+        // Functional Logic: Pre-slugify AI content
+        slug: result.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
       });
       
       toast({ title: "Draft Generated", description: "Review and refine your AI-written article." });
@@ -168,7 +170,7 @@ export default function BlogEditor() {
             AI Write
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <a href={`/blog/${formData.id}`} target="_blank" className="font-bold"><Eye size={16} className="mr-2" /> Preview</a>
+            <a href={`/blog/${formData.slug || formData.id}`} target="_blank" className="font-bold"><Eye size={16} className="mr-2" /> Preview</a>
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving || aiLoading} className="font-bold">
             {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
@@ -196,7 +198,7 @@ export default function BlogEditor() {
                   Body Content (WordPress Style Visual Editor)
                   <span className="text-[10px] opacity-40">Rich text enabled</span>
                 </label>
-                <div className="min-h-[400px] bg-background rounded-md border border-input">
+                <div className="min-h-[400px] bg-background rounded-md border border-input overflow-hidden">
                   <ReactQuill 
                     theme="snow"
                     value={formData.content || ''}
@@ -249,7 +251,15 @@ export default function BlogEditor() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-muted-foreground">URL Slug</label>
-                <Input value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} placeholder="how-to-beat-ats" />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold opacity-30">/blog/</span>
+                  <Input 
+                    value={formData.slug} 
+                    onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
+                    className="pl-14"
+                    placeholder="how-to-beat-ats" 
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-muted-foreground">Meta Description</label>

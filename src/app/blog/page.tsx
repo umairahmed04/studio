@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -148,7 +147,7 @@ export default function BlogPage() {
                     {post.excerpt}
                   </p>
                   <Button variant="link" className="p-0 h-auto font-bold group flex items-center gap-1" asChild>
-                    <Link href={`/blog/${post.id}`}>
+                    <Link href={`/blog/${post.slug || post.id}`}>
                       Read Full Article 
                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Link>

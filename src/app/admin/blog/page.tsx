@@ -210,7 +210,7 @@ export default function AdminBlogList() {
                   <Trash2 size={16} />
                 </Button>
                 <Button variant="ghost" size="icon" asChild title="View Public Post">
-                  <a href={`/blog/${post.id}`} target="_blank"><ExternalLink size={16} /></a>
+                  <a href={`/blog/${post.slug || post.id}`} target="_blank"><ExternalLink size={16} /></a>
                 </Button>
               </div>
             </CardContent>

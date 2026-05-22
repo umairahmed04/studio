@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -26,21 +25,40 @@ import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 export default function BlogPostPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // 'id' here is the slug from the URL
   const db = useFirestore();
 
-  const postRef = useMemo(() => id && db ? doc(db, 'blog_posts', id as string) : null, [db, id]);
-  const { data: post, loading } = useDoc(postRef);
+  // Functional Logic Upgrade: Fetch by Slug for SEO-friendly URLs
+  const postQuery = useMemo(() => {
+    if (!db || !id) return null;
+    return query(
+      collection(db, 'blog_posts'), 
+      where('slug', '==', id), 
+      limit(1)
+    );
+  }, [db, id]);
+
+  const { data: posts, loading } = useCollection(postQuery);
+  const post = posts?.[0] as any;
 
   const relatedQuery = useMemo(() => {
     if (!db || !id) return null;
-    return query(collection(db, 'blog_posts'), where('status', '==', 'published'), limit(3));
+    return query(
+      collection(db, 'blog_posts'), 
+      where('status', '==', 'published'), 
+      limit(3)
+    );
   }, [db, id]);
 
   const { data: relatedPosts } = useCollection(relatedQuery);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="animate-spin text-primary w-12 h-12" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Securing Content...</p>
+      </div>
+    );
   }
 
   if (!post || post.status !== 'published') {
@@ -76,7 +94,7 @@ export default function BlogPostPage() {
             </div>
           </header>
 
-          <div className="aspect-video relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl">
+          <div className="aspect-video relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl bg-muted/20 border border-white/10">
             <img 
               src={post.image || 'https://picsum.photos/seed/article/1200/600'} 
               alt={post.title}
@@ -85,7 +103,7 @@ export default function BlogPostPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-            <div className="lg:col-span-8 space-y-8">
+            <div className="lg:col-span-8 space-y-8 overflow-hidden">
               <div 
                 className="prose dark:prose-invert max-w-none prose-headings:font-headline prose-headings:font-bold prose-p:leading-relaxed prose-p:text-muted-foreground prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:p-6 prose-blockquote:rounded-r-xl break-words"
                 dangerouslySetInnerHTML={{ __html: post.content }}
@@ -125,7 +143,7 @@ export default function BlogPostPage() {
         <section className="max-w-4xl mx-auto pt-20 border-t mt-20">
           <h3 className="text-2xl font-bold mb-8">Related Reading</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {relatedPosts?.filter(p => p.id !== id).slice(0, 2).map((p: any) => (
+            {relatedPosts?.filter((p: any) => p.id !== post.id).slice(0, 2).map((p: any) => (
               <Card key={p.id} className="glass group overflow-hidden border-white/5 hover:border-primary/20 transition-all">
                 <div className="aspect-video relative overflow-hidden">
                   <img src={p.image || 'https://picsum.photos/seed/rel/400/200'} alt={p.title} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" />
@@ -133,7 +151,7 @@ export default function BlogPostPage() {
                 <CardContent className="p-6 space-y-4">
                   <Badge variant="outline" className="text-[10px]">{p.category || 'Career'}</Badge>
                   <h4 className="font-bold group-hover:text-primary transition-colors line-clamp-2">{p.title}</h4>
-                  <Link href={`/blog/${p.id}`} className="text-xs font-bold text-primary flex items-center gap-1 group/link">
+                  <Link href={`/blog/${p.slug || p.id}`} className="text-xs font-bold text-primary flex items-center gap-1 group/link">
                     Read Article <ArrowRight size={12} className="group-hover/link:translate-x-1 transition-transform" />
                   </Link>
                 </CardContent>
