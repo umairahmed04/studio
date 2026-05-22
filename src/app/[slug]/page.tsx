@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -11,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 /**
  * @fileOverview High-Performance Dynamic Content Hub.
  * Fetches and renders dynamic CMS pages by their unique SEO-friendly slugs.
+ * Strictly filters for 'published' status to prevent draft leaks.
  */
 export default function DynamicCmsPage() {
   const { slug } = useParams();
@@ -33,7 +33,7 @@ export default function DynamicCmsPage() {
   useEffect(() => {
     if (!loading && (!pages || pages.length === 0)) {
       // Small delay to prevent layout flicker on fast loads
-      const timer = setTimeout(() => setIsNotFound(true), 500);
+      const timer = setTimeout(() => setIsNotFound(true), 1000);
       return () => clearTimeout(timer);
     }
   }, [loading, pages]);
@@ -42,7 +42,6 @@ export default function DynamicCmsPage() {
     if (page?.seo?.title || page?.title) {
       document.title = `${page.seo?.title || page.title} | ATSResumeScan`;
       
-      // Update basic meta tags client-side for immediate feedback
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) metaDesc.setAttribute('content', page.seo?.description || '');
     }

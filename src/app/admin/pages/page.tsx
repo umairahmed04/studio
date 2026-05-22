@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -17,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 /**
  * @fileOverview Dynamic Page Ecosystem Management.
- * Overhauled to fix Edit/Delete functionality and stabilize provisioning.
+ * Optimized to prevent duplicate provisioning and ensure robust CRUD operations.
  */
 export default function PageManagement() {
   const db = useFirestore();
@@ -41,6 +40,7 @@ export default function PageManagement() {
       const provision = async () => {
         const coreSlugs = ['home', 'about'];
         for (const slug of coreSlugs) {
+          // Robust check: Is the slug already present in the FETCHED list?
           const existsInList = pages.some((p: any) => p.slug === slug);
           if (!existsInList && !provisioned.current.has(slug)) {
             provisioned.current.add(slug);
@@ -123,9 +123,8 @@ export default function PageManagement() {
     // Safety check for main system nodes
     if (slug === 'home' || slug === 'about') {
       const count = pages?.filter((p: any) => p.slug === slug).length || 0;
-      // Only protect if it's the last one
       if (count <= 1) {
-        toast({ variant: "destructive", title: "Protected Node", description: "The primary system page cannot be removed." });
+        toast({ variant: "destructive", title: "Protected Node", description: "Primary system pages cannot be removed." });
         return;
       }
     }
@@ -136,7 +135,6 @@ export default function PageManagement() {
       await deleteDoc(doc(db, 'pages', id));
       toast({ title: "Page Deleted" });
     } catch (e) {
-      console.error("Delete error", e);
       toast({ variant: "destructive", title: "Deletion Failed" });
     }
   };
@@ -148,7 +146,7 @@ export default function PageManagement() {
           <h1 className="text-3xl font-headline font-bold">Page Management</h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Globe size={14} className="text-primary" />
-            Edit site architecture and dynamic content.
+            Manage site architecture and dynamic content.
           </p>
         </div>
         <Button onClick={handleCreatePage} className="font-bold h-12 px-6 shadow-lg shadow-primary/20">
@@ -250,7 +248,7 @@ export default function PageManagement() {
           <div className="flex-1 space-y-1">
             <h4 className="text-xl font-bold font-headline">Enterprise CMS Engine</h4>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              Published pages override hardcoded logic. Use the editor to manage your site's professional narrative without touching code.
+              Manage your site's professional narrative without touching code. Core system pages take priority over hardcoded defaults.
             </p>
           </div>
         </div>

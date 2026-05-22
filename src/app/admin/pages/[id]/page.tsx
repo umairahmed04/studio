@@ -1,12 +1,11 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useStorage } from '@/firebase';
-import { doc, updateDoc, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,8 +15,6 @@ import {
   ArrowLeft, 
   Plus, 
   Trash2, 
-  GripVertical, 
-  Settings, 
   Layout, 
   Loader2,
   ChevronDown,
@@ -34,9 +31,6 @@ import {
   CheckCircle2,
   Upload,
   Link as LinkIcon,
-  Copy,
-  Wand2,
-  X,
   Edit3
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -99,6 +93,7 @@ export default function PageEditor() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CRITICAL FIX: Ensure formData is synced correctly when page loads
   useEffect(() => {
     if (page && !formData) {
       setFormData(page);
@@ -117,6 +112,7 @@ export default function PageEditor() {
         seo: formData.seo || {},
         updatedAt: serverTimestamp()
       });
+      // CRITICAL FIX: Explicitly update existing doc instead of creating new
       await updateDoc(pageRef, sanitizedData);
       toast({ title: "Changes Saved", description: `Page is currently set to ${formData.status}.` });
     } catch (error) {
@@ -175,7 +171,7 @@ export default function PageEditor() {
       const url = await getDownloadURL(snap.ref);
       
       setFormData({ ...formData, featuredImage: url });
-      toast({ title: "Identity Asset Updated" });
+      toast({ title: "Featured Image Updated" });
     } catch (e) {
       toast({ variant: "destructive", title: "Upload Failed" });
     } finally {
@@ -203,7 +199,7 @@ export default function PageEditor() {
                 {formData.status}
               </Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-1">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
               Page Editor <span className="opacity-30">/</span> {formData.slug}
             </p>
           </div>
@@ -221,14 +217,14 @@ export default function PageEditor() {
 
       <Tabs defaultValue="sections">
         <TabsList className="grid w-full grid-cols-3 max-w-xl h-14 bg-muted/50 p-1 rounded-2xl border border-white/5">
-          <TabsTrigger value="sections" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
+          <TabsTrigger value="sections" className="font-bold text-xs uppercase rounded-xl transition-all">
             <Layout size={16} className="mr-2" /> Sections
           </TabsTrigger>
-          <TabsTrigger value="seo" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
-            <Globe size={16} className="mr-2" /> SEO
+          <TabsTrigger value="seo" className="font-bold text-xs uppercase rounded-xl transition-all">
+            <Globe size={16} className="mr-2" /> SEO & Status
           </TabsTrigger>
-          <TabsTrigger value="media" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
-            <ImageIcon size={16} className="mr-2" /> Identity
+          <TabsTrigger value="media" className="font-bold text-xs uppercase rounded-xl transition-all">
+            <ImageIcon size={16} className="mr-2" /> Visuals
           </TabsTrigger>
         </TabsList>
 
@@ -255,14 +251,14 @@ export default function PageEditor() {
               </div>
             )}
             
-            <Card className="border-dashed border-2 bg-muted/5 rounded-[2rem] hover:bg-muted/10 transition-all group cursor-default border-white/10">
+            <Card className="border-dashed border-2 bg-muted/5 rounded-[2rem] hover:bg-muted/10 transition-all group border-white/10">
               <CardContent className="p-12 text-center space-y-8">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary shadow-inner group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary group-hover:scale-110 transition-transform">
                   <Plus size={32} />
                 </div>
                 <div className="space-y-2">
                   <h4 className="text-2xl font-headline font-bold">Inject New Section</h4>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">Extend this page with a new structural content block.</p>
+                  <p className="text-sm text-muted-foreground">Extend this page with a new structural content block.</p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
                   <AddSectionButton icon={<Sparkles size={14} />} label="Hero" onClick={() => addSection('hero')} />
@@ -285,39 +281,43 @@ export default function PageEditor() {
                   <Search size={24} />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-headline font-bold">SEO Optimization</CardTitle>
-                  <CardDescription>Control how this page appears in search results.</CardDescription>
+                  <CardTitle className="text-2xl font-headline font-bold">SEO & Publication</CardTitle>
+                  <CardDescription>Control how this page appears in search results and its visibility status.</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                    <Type size={14} className="text-primary" /> Handle (Slug)
-                  </Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">URL Handle (Slug)</Label>
                   <div className="relative group">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold font-mono">/</span>
                     <Input 
                       value={formData.slug} 
                       onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
-                      className="pl-8 h-14 font-mono text-sm bg-background/50 focus:bg-background transition-all border-white/10" 
+                      className="pl-8 h-14 font-mono text-sm bg-background/50 border-white/10" 
                       placeholder="page-slug"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                    <Globe size={14} className="text-primary" /> Browser Title
-                  </Label>
-                  <Input 
-                    value={formData.seo?.title || ''} 
-                    onChange={(e) => setFormData({...formData, seo: { ...formData.seo, title: e.target.value }})} 
-                    className="h-14 font-bold bg-background/50 border-white/10"
-                    placeholder="Search Headline..."
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Publication Status</Label>
+                  <StatusSelect 
+                    value={formData.status} 
+                    onChange={(v: string) => setFormData({...formData, status: v})} 
                   />
                 </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Browser Title</Label>
+                <Input 
+                  value={formData.seo?.title || ''} 
+                  onChange={(e) => setFormData({...formData, seo: { ...formData.seo, title: e.target.value }})} 
+                  className="h-14 font-bold bg-background/50 border-white/10"
+                  placeholder="Search Headline..."
+                />
               </div>
 
               <div className="space-y-4">
@@ -329,22 +329,6 @@ export default function PageEditor() {
                   placeholder="Compelling search summary..."
                   className="bg-background/50 border-white/10 text-sm leading-relaxed resize-none p-4"
                 />
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Publication Status</Label>
-                <div className="flex flex-wrap gap-4">
-                  <StatusSelect 
-                    value={formData.status} 
-                    onChange={(v: string) => setFormData({...formData, status: v})} 
-                  />
-                  <div className="flex-1 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
-                    <CheckCircle2 className="text-primary shrink-0" size={18} />
-                    <p className="text-[10px] leading-relaxed text-muted-foreground">
-                      Setting this page to <strong>Published</strong> makes it live on your domain.
-                    </p>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -358,8 +342,8 @@ export default function PageEditor() {
                   <ImageIcon size={24} />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-headline font-bold">Visual Identity</CardTitle>
-                  <CardDescription>Social sharing and Open Graph assets.</CardDescription>
+                  <CardTitle className="text-2xl font-headline font-bold">Featured Visuals</CardTitle>
+                  <CardDescription>Social sharing and hero asset management.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -367,9 +351,7 @@ export default function PageEditor() {
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div className="space-y-6">
                     <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center justify-between">
-                         Featured Image URL
-                       </Label>
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Featured Image URL</Label>
                        <div className="flex gap-2">
                          <div className="relative flex-1">
                            <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -399,14 +381,14 @@ export default function PageEditor() {
                          <img src={formData.featuredImage} alt="Featured" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" />
                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Button variant="destructive" size="sm" className="rounded-xl" onClick={() => setFormData({...formData, featuredImage: ''})}>
-                              <Trash2 size={14} className="mr-2" /> Remove
+                              <Trash2 size={14} className="mr-2" /> Remove Image
                             </Button>
                          </div>
                        </>
                      ) : (
                        <div className="w-full h-full flex flex-col items-center justify-center space-y-4 text-muted-foreground">
                           <ImageIcon size={48} className="opacity-10" />
-                          <p className="text-[10px] font-black uppercase tracking-widest opacity-40">No Identity Asset Assigned</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-40">No Asset Assigned</p>
                        </div>
                      )}
                   </div>
@@ -442,7 +424,7 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
   const [expanded, setExpanded] = useState(false);
 
   const handleHeadingChange = (value: string) => {
-    onUpdate({ content: { ...section.content, heading: value, title: undefined } });
+    onUpdate({ content: { ...section.content, heading: value } });
   };
 
   const handleImageUrlChange = (value: string) => {
@@ -471,12 +453,9 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
              {getSectionIcon(section.type)}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h4 className="font-bold text-sm capitalize">{section.type} Block</h4>
-              <Badge variant="secondary" className="uppercase text-[8px] font-black tracking-tighter bg-muted h-4 border-none opacity-60">Pos {section.order}</Badge>
-            </div>
+            <h4 className="font-bold text-sm capitalize">{section.type} Block</h4>
             <p className="text-[10px] text-muted-foreground truncate max-w-[200px] font-mono italic">
-              {section.content?.heading || section.content?.title || 'Draft Content...'}
+              {section.content?.heading || section.content?.title || 'No Heading'}
             </p>
           </div>
         </div>
@@ -493,9 +472,7 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
         <CardContent className="p-10 space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                <Type size={12} className="text-primary" /> Section Heading
-              </Label>
+              <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Block Heading</Label>
               <Input 
                 value={section.content?.heading || section.content?.title || ''} 
                 onChange={(e) => handleHeadingChange(e.target.value)} 
@@ -505,9 +482,7 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
 
             {showImageField && (
               <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                  <ImageIcon size={12} className="text-primary" /> Visual URL
-                </Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Visual URL</Label>
                 <div className="relative group">
                   <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <Input 
@@ -522,7 +497,7 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
           </div>
 
           <div className="space-y-4">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Content Content</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Main Content (Rich Text)</Label>
             <div className="bg-background rounded-[1.5rem] border border-white/5 shadow-2xl">
               <DebouncedRichEditor 
                 initialValue={section.content?.description || section.content?.subheading || section.content?.body || ''}
@@ -555,7 +530,7 @@ function DebouncedRichEditor({ initialValue, onSync }: { initialValue: string, o
       onChange={handleChange}
       modules={quillModules}
       formats={quillFormats}
-      placeholder="Start writing..."
+      placeholder="Start writing content..."
       className="quill-editor"
     />
   );
@@ -575,16 +550,16 @@ function getSectionIcon(type: string) {
 function StatusSelect({ value, onChange }: any) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-14 w-full md:w-[200px] font-bold rounded-2xl bg-background border-white/10">
-        <SelectValue />
+      <SelectTrigger className="h-14 w-full font-bold rounded-2xl bg-background border-white/10">
+        <SelectValue placeholder="Select Visibility" />
       </SelectTrigger>
       <SelectContent className="rounded-xl">
         <SelectItem value="draft" className="rounded-lg p-3">
            <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
               <div className="flex flex-col text-left">
-                 <span className="font-bold">Draft</span>
-                 <span className="text-[9px] opacity-60">Hidden</span>
+                 <span className="font-bold">Draft / Staging</span>
+                 <span className="text-[9px] opacity-60 italic">Only visible to administrators</span>
               </div>
            </div>
         </SelectItem>
@@ -592,8 +567,8 @@ function StatusSelect({ value, onChange }: any) {
            <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500" />
               <div className="flex flex-col text-left">
-                 <span className="font-bold">Published</span>
-                 <span className="text-[9px] opacity-60">Live</span>
+                 <span className="font-bold">Published Live</span>
+                 <span className="text-[9px] opacity-60 italic">Visible to all site visitors</span>
               </div>
            </div>
         </SelectItem>
@@ -615,12 +590,12 @@ function AddSectionButton({ icon, label, onClick }: any) {
 
 function getInitialContent(type: string) {
   switch(type) {
-    case 'hero': return { heading: 'Enter Your Visionary Headline', subheading: '<p>A professional sub-headline.</p>', badge: 'SYSTEM ACTIVE', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup', showPremiumMockups: true };
+    case 'hero': return { heading: 'Enter Your Visionary Headline', subheading: '<p>A professional sub-headline describing your mission.</p>', badge: 'SYSTEM ACTIVE', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup', showPremiumMockups: true };
     case 'features': return { title: 'High-Impact Capabilities', description: 'Everything your search needs to succeed.', items: [{ title: 'AI Logic', desc: 'Deep data mapping.', icon: 'zap' }] };
     case 'faq': return { title: 'Intelligence FAQ', items: [{ question: 'How is this powered?', answer: 'Gemini 2.5 Flash architecture.' }] };
     case 'about': return { title: 'Our Narrative', description: '<p>Tell your high-performance career story here.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
     case 'cta': return { title: 'Secure Your Future', description: '<p>Join 50,000+ elite professionals.</p>', buttonText: 'Claim Your Account', buttonUrl: '/signup' };
-    case 'custom': return { title: 'Custom Narrative', body: '<h2>New Rich Section</h2><p>Start composing here...</p>' };
+    case 'custom': return { title: 'Custom Block', body: '<h2>New Dynamic Section</h2><p>Start composing your story here...</p>' };
     default: return {};
   }
 }
