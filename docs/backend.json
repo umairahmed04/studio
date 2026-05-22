@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -42,6 +41,17 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "Menu": {
+      "title": "Navigation Menu",
+      "description": "Dynamic menu structure for the website.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -56,13 +66,13 @@
       "schema": "CmsPage",
       "description": "Dynamic site pages."
     },
-    "/pages/{pageId}/sections/{sectionId}": {
-      "schema": "object",
-      "description": "Page content sections (Hero, About, etc)."
+    "/menus/{menuId}": {
+      "schema": "Menu",
+      "description": "Dynamic site menus."
     },
-    "/blog_posts/{postId}": {
+    "/settings/{docId}": {
       "schema": "object",
-      "description": "Career resource blog articles."
+      "description": "Global application settings (navigation, SEO, tools)."
     }
   }
 }

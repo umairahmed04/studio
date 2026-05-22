@@ -15,12 +15,14 @@ import {
   Megaphone,
   ArrowLeft,
   FileSearch,
-  Activity
+  Activity,
+  Menu
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Platform Analytics', href: '/admin/analytics', icon: Activity },
+  { name: 'Menu Management', href: '/admin/menus', icon: Menu },
   { name: 'Blog Management', href: '/admin/blog', icon: FileText },
   { name: 'Page Management', href: '/admin/pages', icon: FileSearch },
   { name: 'User Directory', href: '/admin/users', icon: Users },

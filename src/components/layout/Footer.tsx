@@ -2,34 +2,63 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { Scan, Twitter, Linkedin, Facebook } from 'lucide-react';
-import { useFirestore, useDoc } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { Scan, Twitter, Linkedin, Facebook, ExternalLink } from 'lucide-react';
+import { useFirestore, useDoc, useCollection } from '@/firebase';
+import { doc, collection, query } from 'firebase/firestore';
 
 export function Footer() {
   const db = useFirestore();
-  const navRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
-  const { data: navData } = useDoc(navRef);
 
-  const footerColumns = navData?.footer?.columns || [
-    { title: 'Tools', links: [
-      { label: 'ATS Scan Engine', href: '/ats-resume-checker' },
-      { label: 'Interactive CV Builder', href: '/cv-builder' },
-      { label: 'CV Compare & Match', href: '/cv-compare' },
-      { label: 'AI Bullet Optimizer', href: '/resume-optimizer' },
-      { label: 'Premium Templates', href: '/templates' }
-    ]},
-    { title: 'Company', links: [
-      { label: 'Our Mission', href: '/about' },
-      { label: 'Career Insights', href: '/blog' },
-      { label: 'Support Hub', href: '/contact' }
-    ]},
-    { title: 'Legal', links: [
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Terms of Service', href: '/terms' },
-      { label: 'Legal Disclaimer', href: '/disclaimer' }
-    ]}
-  ];
+  // 1. Fetch Dynamic Navigation Settings & Menus
+  const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
+  const { data: navSettings } = useDoc(navSettingsRef);
+
+  const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
+  const { data: menus } = useCollection(menusQuery);
+
+  const activeFooterMenu = useMemo(() => {
+    if (!menus || !navSettings?.footer) return null;
+    return menus.find(m => m.id === navSettings.footer);
+  }, [menus, navSettings]);
+
+  // 2. Process Footer Menu into Columns
+  const footerColumns = useMemo(() => {
+    if (!activeFooterMenu?.items || activeFooterMenu.items.length === 0) {
+      // Fallback Static Columns
+      return [
+        { title: 'Tools', links: [
+          { label: 'ATS Scan Engine', href: '/ats-resume-checker' },
+          { label: 'Interactive CV Builder', href: '/cv-builder' },
+          { label: 'CV Compare & Match', href: '/cv-compare' },
+          { label: 'AI Bullet Optimizer', href: '/resume-optimizer' }
+        ]},
+        { title: 'Company', links: [
+          { label: 'Our Mission', href: '/about' },
+          { label: 'Career Insights', href: '/blog' },
+          { label: 'Support Hub', href: '/contact' }
+        ]},
+        { title: 'Legal', links: [
+          { label: 'Privacy Policy', href: '/privacy' },
+          { label: 'Terms of Service', href: '/terms' }
+        ]}
+      ];
+    }
+
+    // Convert flat list with levels into Column structure
+    const columns: any[] = [];
+    let currentColumn: any = null;
+
+    activeFooterMenu.items.forEach((item: any) => {
+      if (item.level === 0) {
+        currentColumn = { title: item.label, links: [] };
+        columns.push(currentColumn);
+      } else if (item.level >= 1 && currentColumn) {
+        currentColumn.links.push({ label: item.label, href: item.href, target: item.target });
+      }
+    });
+
+    return columns;
+  }, [activeFooterMenu]);
 
   return (
     <footer className="bg-background border-t py-16">
@@ -53,9 +82,9 @@ export function Footer() {
               Elevating career potential with premium AI optimization. Join 50,000+ job seekers who trust our ATS scanning technology.
             </p>
             <div className="flex items-center gap-3">
-              <Link href={navData?.footer?.social?.facebook || "#"} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Facebook size={14} /></Link>
-              <Link href={navData?.footer?.social?.linkedin || "#"} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Linkedin size={14} /></Link>
-              <Link href={navData?.footer?.social?.twitter || "#"} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Twitter size={14} /></Link>
+              <Link href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Facebook size={14} /></Link>
+              <Link href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Linkedin size={14} /></Link>
+              <Link href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all"><Twitter size={14} /></Link>
             </div>
           </div>
 
@@ -65,8 +94,13 @@ export function Footer() {
               <ul className="space-y-4">
                 {col.links.map((link: any, lIdx: number) => (
                   <li key={lIdx}>
-                    <Link href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <Link 
+                      href={link.href} 
+                      target={link.target || '_self'}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    >
                       {link.label}
+                      {link.href.startsWith('http') && <ExternalLink size={10} className="opacity-40" />}
                     </Link>
                   </li>
                 ))}

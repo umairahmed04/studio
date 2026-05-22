@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { 
   Scan, 
-  Menu, 
+  Menu as MenuIcon, 
   LayoutDashboard, 
   LogOut, 
   Sparkles, 
@@ -19,33 +19,46 @@ import {
   Target,
   ArrowLeftRight,
   Mic,
-  Share2
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from './ThemeToggle';
-import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 export function Navbar() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
 
   const userRef = useMemo(() => user && db ? doc(db, 'users', user.uid) : null, [user, db]);
   const { data: userData } = useDoc(userRef);
 
-  const navRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
-  const { data: navData } = useDoc(navRef);
+  // 1. Fetch Dynamic Navigation Settings
+  const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
+  const { data: navSettings } = useDoc(navSettingsRef);
+
+  const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
+  const { data: menus } = useCollection(menusQuery);
+
+  const activeHeaderMenu = useMemo(() => {
+    if (!menus || !navSettings?.header) return null;
+    return menus.find(m => m.id === navSettings.header);
+  }, [menus, navSettings]);
 
   const isAdmin = userData?.role === 'admin' || userData?.role === 'editor' || user?.email === 'itexpert47@gmail.com';
 
@@ -55,11 +68,29 @@ export function Navbar() {
     }
   };
 
-  const dynamicMenuItems = navData?.menuItems || [
-    { label: 'Templates', href: '/templates' },
-    { label: 'Blog', href: '/blog' },
-    { label: 'About', href: '/about' }
-  ];
+  // 2. Process Nested Menu Structure for Frontend
+  const processedMenuItems = useMemo(() => {
+    if (!activeHeaderMenu?.items) return [];
+    
+    const rootItems: any[] = [];
+    let currentParent: any = null;
+    let currentSubParent: any = null;
+
+    activeHeaderMenu.items.forEach((item: any) => {
+      if (item.level === 0) {
+        currentParent = { ...item, children: [] };
+        rootItems.push(currentParent);
+        currentSubParent = null;
+      } else if (item.level === 1 && currentParent) {
+        currentSubParent = { ...item, children: [] };
+        currentParent.children.push(currentSubParent);
+      } else if (item.level === 2 && currentSubParent) {
+        currentSubParent.children.push({ ...item });
+      }
+    });
+
+    return rootItems;
+  }, [activeHeaderMenu]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl">
@@ -99,21 +130,65 @@ export function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {dynamicMenuItems.map((item: any, idx: number) => (
-            <Link 
-              key={idx} 
-              href={item.href} 
-              className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {processedMenuItems.length === 0 ? (
+            // Fallback Menu
+            <>
+              <Link href="/templates" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">Templates</Link>
+              <Link href="/blog" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">Blog</Link>
+              <Link href="/about" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">About</Link>
+            </>
+          ) : (
+            processedMenuItems.map((item) => (
+              item.children.length > 0 ? (
+                <DropdownMenu key={item.id}>
+                  <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
+                    {item.label} <ChevronDown size={14} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
+                    {item.children.map((child: any) => (
+                      child.children.length > 0 ? (
+                        <DropdownMenuSub key={child.id}>
+                          <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="w-56 p-2">
+                             {child.children.map((sub: any) => (
+                               <DropdownMenuItem key={sub.id} asChild className="p-3 cursor-pointer">
+                                  <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                                    {sub.label}
+                                    {sub.href.startsWith('http') && <ExternalLink size={10} />}
+                                  </Link>
+                               </DropdownMenuItem>
+                             ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      ) : (
+                        <DropdownMenuItem key={child.id} asChild className="p-3 cursor-pointer">
+                          <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                            {child.label}
+                            {child.href.startsWith('http') && <ExternalLink size={10} />}
+                          </Link>
+                        </DropdownMenuItem>
+                      )
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link 
+                  key={item.id} 
+                  href={item.href} 
+                  target={item.target || '_self'}
+                  className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground"
+                >
+                  {item.label}
+                </Link>
+              )
+            ))
+          )}
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeToggle />
           
-          {user && !loading ? (
+          {user && !userLoading ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 p-0 overflow-hidden border-2 border-background shadow-lg">
@@ -174,7 +249,7 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            !loading && (
+            !userLoading && (
               <div className="flex items-center gap-2">
                 <Button asChild variant="ghost" size="sm" className="font-bold hidden sm:flex uppercase tracking-wider text-xs">
                   <Link href="/login">Sign In</Link>
@@ -190,7 +265,7 @@ export function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu size={24} />
+                  <MenuIcon size={24} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-2">
@@ -207,7 +282,7 @@ export function Navbar() {
                    <DropdownMenuItem asChild className="p-3 font-bold border-t">
                       <Link href="/dashboard">My Dashboard</Link>
                     </DropdownMenuItem>
-                ) : !loading && (
+                ) : !userLoading && (
                   <DropdownMenuItem asChild className="p-3 font-bold text-primary bg-primary/5 border-t">
                     <Link href="/signup">Free Sign Up</Link>
                   </DropdownMenuItem>
