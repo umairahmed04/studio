@@ -1,10 +1,12 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useDoc, useCollection } from '@/firebase';
-import { doc, updateDoc, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useFirestore, useDoc, useCollection, useStorage } from '@/firebase';
+import { doc, updateDoc, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,12 +28,22 @@ import {
   Layers,
   Globe,
   ImageIcon,
-  Type
+  Type,
+  Eye,
+  Search,
+  CheckCircle2,
+  Upload,
+  Link as LinkIcon,
+  Copy,
+  Wand2,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
 
 // Import Quill styles
 import 'react-quill-new/dist/quill.snow.css';
@@ -39,25 +51,31 @@ import 'react-quill-new/dist/quill.snow.css';
 // Dynamically import Quill to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill-new'), {
   ssr: false,
-  loading: () => <div className="h-40 w-full bg-muted animate-pulse rounded-md" />
+  loading: () => <div className="h-64 w-full bg-muted animate-pulse rounded-md" />
 });
 
 const quillModules = {
   toolbar: [
-    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
     [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-    ['link', 'clean']
+    [{ 'align': [] }],
+    ['link', 'image', 'video'],
+    ['code-block', 'clean']
   ],
 };
 
 const quillFormats = [
-  'bold', 'italic', 'underline', 'strike',
-  'list', 'link'
+  'header',
+  'bold', 'italic', 'underline', 'strike', 'blockquote',
+  'list', 'align',
+  'link', 'image', 'video', 'code-block'
 ];
 
 export default function PageEditor() {
   const { id } = useParams();
   const db = useFirestore();
+  const storage = useStorage();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -73,6 +91,8 @@ export default function PageEditor() {
 
   const [formData, setFormData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (page) setFormData(page);
@@ -87,10 +107,9 @@ export default function PageEditor() {
         ...saveData,
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Page Saved", description: "Metadata and status updated." });
+      toast({ title: "Configuration Secured", description: "Metadata and publication status updated." });
     } catch (error) {
-      console.error("Page Save Error:", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to save settings." });
+      toast({ variant: "destructive", title: "Save Error", description: "Failed to update page settings." });
     } finally {
       setSaving(false);
     }
@@ -105,10 +124,11 @@ export default function PageEditor() {
       content: getInitialContent(type),
       style: { backgroundColor: 'transparent', padding: 'py-20' }
     });
+    toast({ title: "Section Injected", description: `Added a new ${type} block.` });
   };
 
   const deleteSection = async (sectionId: string) => {
-    if (!db || !confirm('Remove this section?')) return;
+    if (!db || !confirm('Permanently remove this content block?')) return;
     await deleteDoc(doc(db, 'pages', id as string, 'sections', sectionId));
   };
 
@@ -118,110 +138,272 @@ export default function PageEditor() {
     await updateDoc(doc(db, 'pages', id as string, 'sections', sectionId), saveData);
   };
 
+  const moveSection = async (section: any, direction: 'up' | 'down') => {
+    if (!sections || !db) return;
+    const idx = sections.findIndex(s => s.id === section.id);
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    
+    if (targetIdx < 0 || targetIdx >= sections.length) return;
+
+    const targetSection = sections[targetIdx];
+    
+    await updateDoc(doc(db, 'pages', id as string, 'sections', section.id), { order: targetSection.order });
+    await updateDoc(doc(db, 'pages', id as string, 'sections', targetSection.id), { order: section.order });
+  };
+
+  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !storage || !formData) return;
+
+    setUploading(true);
+    try {
+      const path = `cms/pages/${id}/featured-${Date.now()}`;
+      const sRef = ref(storage, path);
+      const snap = await uploadBytes(sRef, file);
+      const url = await getDownloadURL(snap.ref);
+      
+      setFormData({ ...formData, featuredImage: url });
+      toast({ title: "Image Uploaded", description: "Featured visual set for this page." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Upload Failed" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (pageLoading || !formData) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-12 h-12" /></div>;
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center bg-background sticky top-0 z-40 py-4 border-b">
+      {/* Top Sticky Header */}
+      <div className="flex justify-between items-center bg-background/80 backdrop-blur sticky top-0 z-50 py-4 border-b">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/pages')}><ArrowLeft size={20} /></Button>
-          <div>
-            <h1 className="text-xl font-bold">{formData.title}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">WordPress Style Editor</p>
+          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/pages')} className="rounded-xl"><ArrowLeft size={20} /></Button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{formData.title}</h1>
+              <Badge variant="outline" className="text-[9px] uppercase tracking-widest h-5 text-primary border-primary/20 bg-primary/5">{formData.status}</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-1">
+              Visual Content Architect <span className="opacity-30">/</span> {formData.slug}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild className="font-bold">
-            <a href={`/${formData.slug === 'home' ? '' : formData.slug}`} target="_blank">Preview Live</a>
+          <Button variant="outline" size="sm" asChild className="font-bold rounded-xl hidden sm:flex">
+            <a href={`/${formData.slug === 'home' ? '' : formData.slug}`} target="_blank"><Eye size={16} className="mr-2" /> Live Preview</a>
           </Button>
-          <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold shadow-lg shadow-primary/20">
+          <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold shadow-lg shadow-primary/20 rounded-xl px-6">
             {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
-            Publish Changes
+            Save & Publish
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="sections">
-        <TabsList className="grid w-full grid-cols-2 max-w-md h-12 bg-muted/50 p-1 rounded-xl">
-          <TabsTrigger value="sections" className="font-bold text-xs uppercase"><Layout size={16} className="mr-2" /> Content Builder</TabsTrigger>
-          <TabsTrigger value="settings" className="font-bold text-xs uppercase"><Settings size={16} className="mr-2" /> Slugs & SEO</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 max-w-xl h-14 bg-muted/50 p-1 rounded-2xl border border-white/5">
+          <TabsTrigger value="sections" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
+            <Layout size={16} className="mr-2" /> Visual Builder
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
+            <Globe size={16} className="mr-2" /> SEO & Slugs
+          </TabsTrigger>
+          <TabsTrigger value="media" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
+            <ImageIcon size={16} className="mr-2" /> Visual Identity
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sections" className="pt-6 space-y-6">
+        <TabsContent value="sections" className="pt-8 space-y-8">
           <div className="grid grid-cols-1 gap-6">
             {sectionsLoading ? (
-              <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>
+              <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                <Loader2 className="animate-spin text-primary" />
+                <p className="text-xs font-black uppercase text-muted-foreground tracking-widest">Building Layout...</p>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {sections?.map((section: any) => (
+              <div className="space-y-6">
+                {sections?.map((section: any, idx: number) => (
                   <SectionEditor 
                     key={section.id} 
                     section={section} 
+                    isFirst={idx === 0}
+                    isLast={idx === (sections?.length || 0) - 1}
                     onUpdate={(data) => updateSection(section.id, data)}
                     onDelete={() => deleteSection(section.id)}
+                    onMove={(dir) => moveSection(section, dir)}
                   />
                 ))}
               </div>
             )}
             
-            <Card className="border-dashed border-2 bg-muted/5 rounded-2xl">
-              <CardContent className="p-12 text-center space-y-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
-                  <Plus size={24} />
+            <Card className="border-dashed border-2 bg-muted/5 rounded-[2rem] hover:bg-muted/10 transition-all group cursor-default border-white/10">
+              <CardContent className="p-12 text-center space-y-8">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary shadow-inner group-hover:scale-110 transition-transform">
+                  <Plus size={32} />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold">Add Dynamic Section</h4>
-                  <p className="text-xs text-muted-foreground">Select a section to add rich content to your page.</p>
+                <div className="space-y-2">
+                  <h4 className="text-2xl font-headline font-bold">Infect Content Logic</h4>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">Select a dynamic block to extend the narrative of your page.</p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2 pt-2">
-                  <Button variant="outline" size="sm" onClick={() => addSection('hero')} className="font-bold"><Sparkles size={14} className="mr-2" /> Hero</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('about')} className="font-bold"><HelpCircle size={14} className="mr-2" /> About</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('features')} className="font-bold"><Layers size={14} className="mr-2" /> Features</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('faq')} className="font-bold"><Activity size={14} className="mr-2" /> FAQ</Button>
-                  <Button variant="outline" size="sm" onClick={() => addSection('cta')} className="font-bold"><Plus size={14} className="mr-2" /> CTA</Button>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <AddSectionButton icon={<Sparkles size={14} />} label="Hero" onClick={() => addSection('hero')} />
+                  <AddSectionButton icon={<HelpCircle size={14} />} label="About" onClick={() => addSection('about')} />
+                  <AddSectionButton icon={<Layers size={14} />} label="Features" onClick={() => addSection('features')} />
+                  <AddSectionButton icon={<Activity size={14} />} label="FAQ" onClick={() => addSection('faq')} />
+                  <AddSectionButton icon={<Plus size={14} />} label="CTA" onClick={() => addSection('cta')} />
+                  <AddSectionButton icon={<Type size={14} />} label="Rich Text" onClick={() => addSection('custom')} />
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="pt-6 space-y-6">
-          <Card className="border-white/5 bg-card/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="text-primary" size={20} />
-                Indexing & Visibility
-              </CardTitle>
-              <CardDescription>Configure URLs and publication status.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Internal Title</label>
-                  <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="h-11 font-bold" />
+        <TabsContent value="seo" className="pt-8 space-y-8">
+          <Card className="border-white/5 bg-card/50 backdrop-blur-xl rounded-[2rem] overflow-hidden shadow-2xl">
+            <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                  <Search size={24} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">URL Slug (URL segment)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground opacity-40 font-bold">/</span>
-                    <Input value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} className="pl-6 h-11 font-mono text-sm" />
+                <div>
+                  <CardTitle className="text-2xl font-headline font-bold">Search Visibility Engine</CardTitle>
+                  <CardDescription>Configure how search engines and social platforms index this page.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                    <Type size={14} className="text-primary" /> Page Handle (Slug)
+                  </Label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 font-bold font-mono">/</span>
+                    <Input 
+                      value={formData.slug} 
+                      onChange={(e) => setFormData({...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
+                      className="pl-8 h-14 font-mono text-sm bg-background/50 focus:bg-background transition-all border-white/10" 
+                      placeholder="page-url-identifier"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed italic">The unique URL identifier. Core slugs like 'home' and 'about' are system-critical.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                    <Globe size={14} className="text-primary" /> Meta Title Override
+                  </Label>
+                  <Input 
+                    value={formData.seo?.title || ''} 
+                    onChange={(e) => setFormData({...formData, seo: { ...formData.seo, title: e.target.value }})} 
+                    className="h-14 font-bold bg-background/50 border-white/10"
+                    placeholder="Search Engine Result Headline..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Meta Description (SEO Snippet)</Label>
+                <Textarea 
+                  rows={4} 
+                  value={formData.seo?.description || ''} 
+                  onChange={(e) => setFormData({...formData, seo: { ...formData.seo, description: e.target.value }})} 
+                  placeholder="Provide a compelling 150-160 character summary for search engines..."
+                  className="bg-background/50 border-white/10 text-sm leading-relaxed resize-none p-4"
+                />
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Publication Status</Label>
+                <div className="flex flex-wrap gap-4">
+                  <StatusSelect 
+                    value={formData.status} 
+                    onChange={(v) => setFormData({...formData, status: v})} 
+                  />
+                  <div className="flex-1 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
+                    <CheckCircle2 className="text-primary shrink-0" size={18} />
+                    <p className="text-[10px] leading-relaxed text-muted-foreground">
+                      Setting a page to <strong>Published</strong> instantly makes it accessible to the public. 
+                      <strong>Drafts</strong> are only visible within this administrative visual builder.
+                    </p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Live Status</label>
-                <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
-                  <SelectTrigger className="h-11 font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft (Internal Only)</SelectItem>
-                    <SelectItem value="published">Published (Live to Public)</SelectItem>
-                  </SelectContent>
-                </Select>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="media" className="pt-8 space-y-8">
+          <Card className="border-white/5 bg-card/50 rounded-[2rem] overflow-hidden shadow-2xl">
+            <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                  <ImageIcon size={24} />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-headline font-bold">Visual Identity Suite</CardTitle>
+                  <CardDescription>Manage the featured visuals and social sharing assets for this page.</CardDescription>
+                </div>
               </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-12">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center justify-between">
+                         Featured Image URL
+                         <span className="opacity-40 font-normal">Social Preview / OG Image</span>
+                       </Label>
+                       <div className="flex gap-2">
+                         <div className="relative flex-1">
+                           <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                           <Input 
+                             value={formData.featuredImage || ''} 
+                             onChange={(e) => setFormData({...formData, featuredImage: e.target.value})} 
+                             className="pl-10 h-12 bg-background/50 font-mono text-[10px]" 
+                             placeholder="https://images.unsplash.com/..."
+                           />
+                         </div>
+                         <input type="file" ref={fileInputRef} onChange={handleFeaturedImageUpload} className="hidden" accept="image/*" />
+                         <Button 
+                           variant="outline" 
+                           className="h-12 w-12 rounded-xl shrink-0" 
+                           onClick={() => fileInputRef.current?.click()}
+                           disabled={uploading}
+                         >
+                           {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                         </Button>
+                       </div>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-muted/30 border border-white/5 space-y-4">
+                       <h4 className="text-xs font-bold flex items-center gap-2"><CheckCircle2 size={14} className="text-green-500" /> Identity Logic</h4>
+                       <p className="text-[11px] text-muted-foreground leading-relaxed">
+                         This image is used as the Open Graph (OG) tag for social media links. Some dynamic templates may also use this as a background visual or card thumbnail.
+                       </p>
+                    </div>
+                  </div>
+
+                  <div className="relative aspect-video rounded-3xl overflow-hidden border-4 border-white/5 bg-muted/20 shadow-2xl group">
+                     {formData.featuredImage ? (
+                       <>
+                         <img src={formData.featuredImage} alt="Featured" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button variant="destructive" size="sm" className="rounded-xl" onClick={() => setFormData({...formData, featuredImage: ''})}>
+                              <Trash2 size={14} className="mr-2" /> Remove Image
+                            </Button>
+                         </div>
+                       </>
+                     ) : (
+                       <div className="w-full h-full flex flex-col items-center justify-center space-y-4 text-muted-foreground">
+                          <ImageIcon size={48} className="opacity-10" />
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-40">No Featured Image Assigned</p>
+                       </div>
+                     )}
+                  </div>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -229,22 +411,34 @@ export default function PageEditor() {
 
       <style jsx global>{`
         .quill-editor .ql-container {
-          border-bottom-left-radius: 0.5rem;
-          border-bottom-right-radius: 0.5rem;
-          min-height: 200px;
+          border-bottom-left-radius: 1.5rem;
+          border-bottom-right-radius: 1.5rem;
+          min-height: 350px;
           font-family: inherit;
+          font-size: 0.95rem;
+          background: hsl(var(--background) / 0.3);
+          border-color: hsl(var(--border) / 0.1);
         }
         .quill-editor .ql-toolbar {
-          border-top-left-radius: 0.5rem;
-          border-top-right-radius: 0.5rem;
-          background: hsl(var(--muted)/0.3);
+          border-top-left-radius: 1.5rem;
+          border-top-right-radius: 1.5rem;
+          background: hsl(var(--muted)/0.5);
+          border-color: hsl(var(--border) / 0.1);
+          padding: 1rem;
         }
+        .quill-editor .ql-editor {
+          padding: 2rem;
+          line-height: 1.8;
+        }
+        .quill-editor .ql-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; }
+        .quill-editor .ql-editor h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .quill-editor .ql-editor p { margin-bottom: 1.5rem; color: hsl(var(--muted-foreground)); }
       `}</style>
     </div>
   );
 }
 
-function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate: (data: any) => void, onDelete: () => void }) {
+function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }: any) {
   const [expanded, setExpanded] = useState(false);
 
   const handleContentUpdate = (key: string, value: any) => {
@@ -254,91 +448,184 @@ function SectionEditor({ section, onUpdate, onDelete }: { section: any, onUpdate
   const showImageField = ['hero', 'about'].includes(section.type);
 
   return (
-    <Card className="overflow-hidden border-white/5 bg-card/50 transition-all hover:border-primary/20">
-      <div className="bg-muted/30 px-6 py-4 flex items-center justify-between border-b border-white/5">
+    <Card className={cn(
+      "overflow-hidden border-white/5 bg-card/50 transition-all hover:border-primary/20 rounded-3xl shadow-xl",
+      expanded && "ring-2 ring-primary/10 border-primary/20"
+    )}>
+      <div className="bg-muted/30 px-8 py-5 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-4">
-          <GripVertical size={16} className="text-muted-foreground cursor-grab opacity-40" />
-          <Badge variant="secondary" className="uppercase text-[10px] font-black tracking-widest bg-primary/10 text-primary border-none">
-            {section.type}
-          </Badge>
-          <span className="text-[10px] font-black uppercase text-muted-foreground opacity-60">Order {section.order}</span>
+          <div className="flex flex-col gap-0.5">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-muted-foreground disabled:opacity-10" 
+              onClick={() => onMove('up')} 
+              disabled={isFirst}
+            >
+              <ChevronUp size={14} />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-muted-foreground disabled:opacity-10" 
+              onClick={() => onMove('down')} 
+              disabled={isLast}
+            >
+              <ChevronDown size={14} />
+            </Button>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+             {getSectionIcon(section.type)}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-sm capitalize">{section.type} Block</h4>
+              <Badge variant="secondary" className="uppercase text-[8px] font-black tracking-tighter bg-muted h-4 border-none opacity-60">Order {section.order}</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground truncate max-w-[200px] font-mono italic">
+              {section.content?.heading || section.content?.title || 'Draft Content...'}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpanded(!expanded)}>
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-10 px-4 font-bold rounded-xl border-white/10" onClick={() => setExpanded(!expanded)}>
+            {expanded ? "Collapse Block" : "Expand to Edit"}
+            {expanded ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={onDelete}><Trash2 size={16} /></Button>
+          <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10 rounded-xl" onClick={onDelete}><Trash2 size={18} /></Button>
         </div>
       </div>
       
       {expanded && (
-        <CardContent className="p-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                  <Type size={12} className="text-primary" />
-                  Heading / Section Title
-                </label>
-                <Input 
-                  value={section.content?.heading || section.content?.title || ''} 
-                  onChange={(e) => handleContentUpdate(section.content?.title ? 'title' : 'heading', e.target.value)} 
-                  className="h-11 font-bold" 
-                />
-              </div>
+        <CardContent className="p-10 space-y-10 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                <Type size={12} className="text-primary" /> Primary Heading
+              </Label>
+              <Input 
+                value={section.content?.heading || section.content?.title || ''} 
+                onChange={(e) => handleContentUpdate(section.content?.title ? 'title' : 'heading', e.target.value)} 
+                className="h-12 font-bold bg-background/50 border-white/5 focus:bg-background rounded-xl text-lg" 
+              />
+            </div>
 
-              {showImageField && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                    <ImageIcon size={12} className="text-primary" />
-                    Featured Visual (Image URL)
-                  </label>
+            {showImageField && (
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+                  <ImageIcon size={12} className="text-primary" /> Visual URL
+                </Label>
+                <div className="relative group">
+                  <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <Input 
                     value={section.content?.imageUrl || ''} 
                     onChange={(e) => handleContentUpdate('imageUrl', e.target.value)} 
                     placeholder="https://picsum.photos/seed/..."
-                    className="h-11 font-mono text-xs" 
+                    className="pl-8 h-12 font-mono text-[10px] bg-background/50 border-white/5 rounded-xl" 
                   />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Body Content (WordPress Editor)</label>
-              <div className="bg-background rounded-lg border quill-editor">
-                <ReactQuill 
-                  theme="snow"
-                  value={section.content?.description || section.content?.subheading || ''}
-                  onChange={(val) => handleContentUpdate(section.content?.subheading ? 'subheading' : 'description', val)}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="Enter rich text description here..."
-                />
-              </div>
-            </div>
-
-            {section.content?.imageUrl && (
-              <div className="pt-4">
-                <p className="text-[9px] font-black uppercase text-muted-foreground mb-2">Visual Preview</p>
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-white/5 bg-muted/50 max-w-sm">
-                  <img src={section.content.imageUrl} alt="Preview" className="object-cover w-full h-full" />
                 </div>
               </div>
             )}
           </div>
+
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Visual Body Editor (Rich HTML)</Label>
+            <div className="bg-background rounded-[1.5rem] border border-white/5 quill-editor shadow-2xl">
+              <ReactQuill 
+                theme="snow"
+                value={section.content?.description || section.content?.subheading || section.content?.body || ''}
+                onChange={(val) => {
+                  const key = section.content?.subheading ? 'subheading' : section.content?.body ? 'body' : 'description';
+                  handleContentUpdate(key, val);
+                }}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Compose your high-impact content here..."
+              />
+            </div>
+          </div>
+
+          {section.content?.imageUrl && (
+            <div className="pt-6">
+              <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-3 block">Live Visual Preview</Label>
+              <div className="relative aspect-video rounded-[2rem] overflow-hidden border-4 border-white/5 bg-muted/50 max-w-lg shadow-2xl group/prev">
+                <img src={section.content.imageUrl} alt="Preview" className="object-cover w-full h-full group-hover/prev:scale-105 transition-transform duration-700" />
+                <div className="absolute top-4 left-4">
+                   <Badge className="bg-black/40 backdrop-blur border-none text-[8px] uppercase">Direct Link Asset</Badge>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
   );
 }
 
+function getSectionIcon(type: string) {
+  switch(type) {
+    case 'hero': return <Sparkles size={20} />;
+    case 'about': return <HelpCircle size={20} />;
+    case 'features': return <Layers size={20} />;
+    case 'faq': return <Activity size={20} />;
+    case 'cta': return <CheckCircle2 size={20} />;
+    default: return <Type size={20} />;
+  }
+}
+
+function StatusSelect({ value, onChange }: any) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-14 w-full md:w-[200px] font-bold rounded-2xl bg-background border-white/10">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="rounded-xl">
+        <SelectItem value="draft" className="rounded-lg p-3">
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <div className="flex flex-col text-left">
+                 <span className="font-bold">Draft</span>
+                 <span className="text-[9px] opacity-60">Internal Preview Only</span>
+              </div>
+           </div>
+        </SelectItem>
+        <SelectItem value="published" className="rounded-lg p-3">
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="flex flex-col text-left">
+                 <span className="font-bold">Published</span>
+                 <span className="text-[9px] opacity-60">Live to Public Domain</span>
+              </div>
+           </div>
+        </SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AddSectionButton({ icon, label, onClick }: any) {
+  return (
+    <Button 
+      variant="outline" 
+      onClick={onClick} 
+      className="h-12 px-6 rounded-xl font-bold border-white/10 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm hover:shadow-primary/20"
+    >
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="text-[11px] uppercase tracking-wider">{label} Block</span>
+      </div>
+    </Button>
+  );
+}
+
 function getInitialContent(type: string) {
   switch(type) {
-    case 'hero': return { heading: 'Enter Heading', subheading: '<p>Provide a compelling subheading.</p>', badge: 'New Feature', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup', showPremiumMockups: true };
-    case 'features': return { title: 'Core Features', items: [{ title: 'Feature 1', desc: 'Detail here', icon: 'zap' }] };
-    case 'faq': return { title: 'Common Questions', items: [{ question: 'What is this?', answer: 'It is an AI platform.' }] };
-    case 'about': return { title: 'Our Story', description: '<p>Tell your story here with rich formatting.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
-    case 'cta': return { title: 'Ready to optimize?', description: '<p>Join today.</p>', buttonText: 'Sign Up Now', buttonUrl: '/signup' };
+    case 'hero': return { heading: 'Enter Your Visionary Headline', subheading: '<p>A 2026 professional sub-headline that converts visitors into leads.</p>', badge: 'NEW FEATURE', primaryButtonText: 'Get Started', primaryButtonUrl: '/signup', showPremiumMockups: true };
+    case 'features': return { title: 'High-Impact Capabilities', description: 'Everything your search needs to succeed.', items: [{ title: 'AI Logic', desc: 'Deep data mapping.', icon: 'zap' }] };
+    case 'faq': return { title: 'System Intelligence FAQ', items: [{ question: 'How is this powered?', answer: 'Proprietary Gemini 2.5 Flash architecture.' }] };
+    case 'about': return { title: 'Our Narrative', description: '<p>Tell your high-performance career story here with <strong>rich formatting</strong> and verified data points.</p>', imageUrl: 'https://picsum.photos/seed/about/800/800' };
+    case 'cta': return { title: 'Ready to Secure Your Future?', description: '<p>Join 50,000+ elite professionals.</p>', buttonText: 'Claim Your Account', buttonUrl: '/signup' };
+    case 'custom': return { title: 'Custom Narrative', body: '<h2>New Rich Section</h2><p>Start composing your specialized page content here...</p>' };
     default: return {};
   }
 }

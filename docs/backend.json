@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -18,19 +19,27 @@
       },
       "required": ["uid", "email"]
     },
-    "InterviewSession": {
-      "title": "Interview Session",
-      "description": "A mock interview session with AI generated questions and feedback.",
+    "CmsPage": {
+      "title": "CMS Page",
+      "description": "A dynamic page managed via the admin dashboard.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "jobTitle": { "type": "string" },
-        "type": { "type": "string", "enum": ["HR", "Technical", "Managerial", "Behavioral"] },
-        "questions": { "type": "array", "items": { "type": "object" } },
-        "score": { "type": "object" },
-        "feedback": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "completed"] },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published", "trash"] },
+        "featuredImage": { "type": "string" },
+        "seo": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "keywords": { "type": "array", "items": { "type": "string" } },
+            "ogImage": { "type": "string" }
+          }
+        },
+        "authorId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     }
@@ -43,13 +52,17 @@
       "schema": "User",
       "description": "User profile document."
     },
-    "/users/{userId}/interviews/{sessionId}": {
-      "schema": "InterviewSession",
-      "description": "Historical interview sessions."
+    "/pages/{pageId}": {
+      "schema": "CmsPage",
+      "description": "Dynamic site pages."
     },
-    "/usernames/{username}": {
+    "/pages/{pageId}/sections/{sectionId}": {
       "schema": "object",
-      "description": "Mapping of unique usernames to user IDs."
+      "description": "Page content sections (Hero, About, etc)."
+    },
+    "/blog_posts/{postId}": {
+      "schema": "object",
+      "description": "Career resource blog articles."
     }
   }
 }
