@@ -24,7 +24,9 @@ import {
   ChevronLeft,
   ArrowUp,
   ArrowDown,
-  Menu
+  Menu,
+  Wand2,
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -52,6 +54,7 @@ export default function MenuManagement() {
   const [editingMenu, setEditingMenu] = useState<{ name: string; items: MenuItem[] } | null>(null);
   const [saving, setSaving] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const isProvisioning = useRef(false);
 
   // Fetch Collections for Menu Sources
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
@@ -64,29 +67,48 @@ export default function MenuManagement() {
   const { data: menus, loading: menusLoading } = useCollection(menusQuery);
   const { data: locations } = useDoc(locationsRef);
 
-  // 1. Auto-Provision Header and Footer Menus
+  // System Tools Registry for Menu Injection
+  const systemTools = [
+    { label: 'ATS Resume Scan', href: '/ats-resume-checker' },
+    { label: 'Interactive CV Builder', href: '/cv-builder' },
+    { label: 'CV Compare & Match', href: '/cv-compare' },
+    { label: 'AI Resume Optimizer', href: '/resume-optimizer' },
+    { label: 'LinkedIn Audit', href: '/linkedin-profile-optimizer' },
+    { label: 'LinkedIn Summary', href: '/linkedin-summary-generator' },
+    { label: 'Job Matcher', href: '/job-description-matcher' },
+    { label: 'Interview Prep', href: '/interview-prep' },
+  ];
+
+  // 1. Auto-Provision Header and Footer Menus (Fixed to prevent duplicates)
   useEffect(() => {
     const provision = async () => {
-      if (!db || menusLoading || !menus) return;
+      if (!db || menusLoading || !menus || isProvisioning.current) return;
       
       const standardMenus = ['Header Menu', 'Footer Menu'];
+      let created = false;
+
       for (const name of standardMenus) {
         const exists = menus.some(m => m.name === name);
         if (!exists) {
+          isProvisioning.current = true;
           try {
             await addDoc(collection(db, 'menus'), {
               name,
               items: [],
               createdAt: serverTimestamp()
             });
+            created = true;
           } catch (e) {
             console.warn(`Failed to provision ${name}`);
           }
         }
       }
+      if (created) {
+        toast({ title: "System Menus Initialized" });
+      }
     };
     provision();
-  }, [db, menus, menusLoading]);
+  }, [db, menus, menusLoading, toast]);
 
   // 2. Initialize active menu
   useEffect(() => {
@@ -270,6 +292,23 @@ export default function MenuManagement() {
             </CardHeader>
             <CardContent className="p-0">
               <Accordion type="multiple" className="w-full">
+                <AccordionItem value="tools" className="border-b px-4">
+                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">System Tools</AccordionTrigger>
+                  <AccordionContent className="pt-0 pb-4 space-y-2">
+                    {systemTools.map((tool, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/10 group hover:border-primary/40 transition-all">
+                        <div className="flex items-center gap-2">
+                          <Wand2 size={12} className="text-primary" />
+                          <span className="text-[11px] font-bold truncate pr-2">{tool.label}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(tool.label, tool.href)}>
+                          <Plus size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+
                 <AccordionItem value="pages" className="border-b px-4">
                   <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Dynamic Pages</AccordionTrigger>
                   <AccordionContent className="pt-0 pb-4 space-y-2">
