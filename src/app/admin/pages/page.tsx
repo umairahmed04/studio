@@ -15,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+/**
+ * @fileOverview Dynamic Page Ecosystem Management.
+ */
 export default function PageManagement() {
   const db = useFirestore();
   const { user } = useUser();
@@ -81,10 +84,10 @@ export default function PageManagement() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Page Drafted", description: "Opening visual builder..." });
+      toast({ title: "Draft Provisioned", description: "Entering architect mode..." });
       router.push(`/admin/pages/${docRef.id}`);
     } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to create page." });
+      toast({ variant: "destructive", title: "Error", description: "Failed to create page record." });
     }
   };
 
@@ -101,13 +104,13 @@ export default function PageManagement() {
         updatedAt: serverTimestamp()
       });
 
-      // Clone sections
+      // Clone sections logic
       const sectionsSnap = await getDocs(collection(db, 'pages', original.id, 'sections'));
       for (const sDoc of sectionsSnap.docs) {
         await addDoc(collection(db, 'pages', docRef.id, 'sections'), sDoc.data());
       }
 
-      toast({ title: "Page Duplicated", description: "Sections cloned successfully." });
+      toast({ title: "Record Cloned", description: "All structural logic has been duplicated." });
     } catch (e) {
       toast({ variant: "destructive", title: "Duplicate Failed" });
     }
@@ -115,15 +118,15 @@ export default function PageManagement() {
 
   const handleDelete = async (id: string, slug: string) => {
     if (slug === 'home' || slug === 'about') {
-      toast({ variant: "destructive", title: "System Protected", description: "Core pages cannot be deleted." });
+      toast({ variant: "destructive", title: "Protected Node", description: "Core system pages cannot be removed." });
       return;
     }
-    if (!db || !confirm('Permanently delete this page and all its content?')) return;
+    if (!db || !confirm('Permanently delete this page node?')) return;
     try {
       await deleteDoc(doc(db, 'pages', id));
-      toast({ title: "Page Deleted" });
+      toast({ title: "Node Removed" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Delete Failed" });
+      toast({ variant: "destructive", title: "Deletion Blocked" });
     }
   };
 
@@ -134,7 +137,7 @@ export default function PageManagement() {
           <h1 className="text-3xl font-headline font-bold">Page Management</h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Globe size={14} className="text-primary" />
-            Manage site-wide dynamic content and core system pages.
+            Control site architecture and dynamic content logic.
           </p>
         </div>
         <Button onClick={handleCreatePage} className="font-bold h-12 px-6 shadow-lg shadow-primary/20">
@@ -159,9 +162,9 @@ export default function PageManagement() {
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Pages</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="draft">Drafts</SelectItem>
+              <SelectItem value="all">Full Site</SelectItem>
+              <SelectItem value="published">Published Only</SelectItem>
+              <SelectItem value="draft">Staging/Drafts</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -171,12 +174,12 @@ export default function PageManagement() {
         {loading ? (
           <div className="flex flex-col items-center justify-center p-20 space-y-4">
             <Loader2 className="animate-spin text-primary w-10 h-10" />
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Syncing Database...</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Syncing Nodes...</p>
           </div>
         ) : filteredPages.length === 0 ? (
           <Card className="p-20 text-center border-dashed border-2 bg-muted/5">
             <FileCode size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-            <p className="text-muted-foreground font-medium">No pages found. Start building your site content!</p>
+            <p className="text-muted-foreground font-medium">No system nodes found matching the criteria.</p>
           </Card>
         ) : (
           filteredPages.map((page: any) => (
@@ -193,21 +196,21 @@ export default function PageManagement() {
                         "text-[9px] uppercase tracking-widest h-5",
                         page.status === 'published' ? "bg-green-600 hover:bg-green-700" : "text-amber-500 border-amber-500/20"
                       )}>
-                        {page.status}
+                        {page.status || 'draft'}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-medium uppercase tracking-tight">
                       <span className="flex items-center gap-1 text-primary lowercase font-mono">/{page.slug === 'home' ? '' : page.slug}</span>
-                      <span className="flex items-center gap-1 opacity-60"><Clock size={12} /> {page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'MMM d, h:mm a') : 'Just now'}</span>
+                      <span className="flex items-center gap-1 opacity-60"><Clock size={12} /> {page.updatedAt?.toDate ? format(page.updatedAt.toDate(), 'MMM d, h:mm a') : 'Recent'}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2 shrink-0">
                   <Button variant="outline" size="sm" className="font-bold h-10 border-white/5 hover:bg-primary/5 hover:text-primary transition-all" onClick={() => router.push(`/admin/pages/${page.id}`)}>
-                    <Edit3 size={16} className="mr-2" /> Visual Edit
+                    <Edit3 size={16} className="mr-2" /> Architect
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50" onClick={() => handleDuplicate(page)} title="Duplicate Page">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50" onClick={() => handleDuplicate(page)} title="Duplicate Node">
                     <Copy size={16} />
                   </Button>
                   <Button variant="ghost" size="icon" asChild className="h-10 w-10 text-muted-foreground hover:text-primary" title="View Live">
@@ -235,10 +238,10 @@ export default function PageManagement() {
             <Sparkles size={32} />
           </div>
           <div className="flex-1 space-y-1">
-            <h4 className="text-xl font-bold font-headline">Enterprise Content Engine</h4>
+            <h4 className="text-xl font-bold font-headline">Enterprise Logic Engine</h4>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              Published CMS pages automatically override the default static system pages. 
-              The visual builder supports rich text, reorderable sections, and full SEO control.
+              Published CMS nodes override standard system logic. 
+              Use the architect to manage structural narratives, SEO, and visual identity without touching code.
             </p>
           </div>
         </div>
