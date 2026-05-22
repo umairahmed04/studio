@@ -9,7 +9,7 @@ import { doc, collection, query } from 'firebase/firestore';
 export function Footer() {
   const db = useFirestore();
 
-  // 1. Fetch Dynamic Navigation Settings & Menus
+  // Fetch Dynamic Navigation Settings & Menus
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
   const { data: navSettings } = useDoc(navSettingsRef);
 
@@ -21,7 +21,7 @@ export function Footer() {
     return menus.find(m => m.id === navSettings.footer);
   }, [menus, navSettings]);
 
-  // 2. Process Footer Menu into Columns
+  // Process Footer Menu into Columns
   const footerColumns = useMemo(() => {
     if (!activeFooterMenu?.items || activeFooterMenu.items.length === 0) {
       // Fallback Static Columns

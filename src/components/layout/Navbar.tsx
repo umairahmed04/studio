@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { 
@@ -15,8 +15,6 @@ import {
   Search,
   Layout,
   Wand2,
-  Linkedin,
-  Target,
   ArrowLeftRight,
   Mic,
   Share2,
@@ -48,7 +46,6 @@ export function Navbar() {
   const userRef = useMemo(() => user && db ? doc(db, 'users', user.uid) : null, [user, db]);
   const { data: userData } = useDoc(userRef);
 
-  // 1. Fetch Dynamic Navigation Settings
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
   const { data: navSettings } = useDoc(navSettingsRef);
 
@@ -68,7 +65,7 @@ export function Navbar() {
     }
   };
 
-  // 2. Process Nested Menu Structure for Frontend
+  // Process Nested Menu Structure for Frontend
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
     
@@ -139,14 +136,14 @@ export function Navbar() {
             </>
           ) : (
             processedMenuItems.map((item) => (
-              item.children.length > 0 ? (
+              item.children && item.children.length > 0 ? (
                 <DropdownMenu key={item.id}>
                   <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
                     {item.label} <ChevronDown size={14} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
                     {item.children.map((child: any) => (
-                      child.children.length > 0 ? (
+                      child.children && child.children.length > 0 ? (
                         <DropdownMenuSub key={child.id}>
                           <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
                           <DropdownMenuSubContent className="w-56 p-2">
@@ -278,6 +275,22 @@ export function Navbar() {
                 <DropdownMenuItem asChild className="p-3">
                   <Link href="/settings/sharing" className="font-bold">Resume Share</Link>
                 </DropdownMenuItem>
+                
+                {/* Dynamic Mobile Menu Items */}
+                {processedMenuItems.map((item) => (
+                  <React.Fragment key={item.id}>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="p-3">
+                      <Link href={item.href} className="font-bold">{item.label}</Link>
+                    </DropdownMenuItem>
+                    {item.children?.map((child: any) => (
+                      <DropdownMenuItem key={child.id} asChild className="p-3 pl-6">
+                        <Link href={child.href} className="text-sm">{child.label}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </React.Fragment>
+                ))}
+
                 {user ? (
                    <DropdownMenuItem asChild className="p-3 font-bold border-t">
                       <Link href="/dashboard">My Dashboard</Link>

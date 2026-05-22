@@ -27,12 +27,9 @@ import {
   Menu
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from '@/components/ui/badge';
 import { cn, cleanForFirestore } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 interface MenuItem {
@@ -52,7 +49,7 @@ export default function MenuManagement() {
   const [editingMenu, setEditingMenu] = useState<{ name: string; items: MenuItem[] } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // 1. Fetch Collections for Menu Sources
+  // Fetch Collections for Menu Sources
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
   const blogQuery = useMemo(() => db ? query(collection(db, 'blog_posts'), orderBy('updatedAt', 'desc')) : null, [db]);
   const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
@@ -370,17 +367,17 @@ export default function MenuManagement() {
                 </div>
               )}
             </CardContent>
-            {editingMenu && editingMenu.items.length > 0 && (
-              <CardFooter className="p-6 border-t bg-muted/10 flex justify-between items-center">
+            <CardFooter className="p-6 border-t bg-muted/10 flex justify-between items-center">
+              {editingMenu && (
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
                   {editingMenu.items.length} Root Items & Submenus
                 </p>
-                <Button onClick={handleSaveMenu} disabled={saving} className="font-bold px-8">
-                  {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-                  Save Menu Structure
-                </Button>
-              </CardFooter>
-            )}
+              )}
+              <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-8">
+                {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+                Save Menu Structure
+              </Button>
+            </CardFooter>
           </Card>
         </main>
       </div>
