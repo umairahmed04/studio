@@ -65,23 +65,23 @@ export default function BlogPage() {
   }, [posts, selectedCategory, searchTerm]);
 
   return (
-    <div className="py-20">
+    <div className="py-12 md:py-20">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center mb-16">
+        <div className="max-w-4xl mx-auto text-center mb-12 md:mb-16">
           <Badge variant="outline" className="mb-4 px-3 py-1 border-primary/20 bg-primary/5 text-primary">
             Expert Career Insights
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-headline font-bold mb-6 tracking-tight text-foreground">
+          <h1 className="text-3xl md:text-6xl font-headline font-bold mb-6 tracking-tight text-foreground leading-tight">
             Career Resources & <span className="text-primary">ATS Strategy</span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+          <p className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
             Master the science of recruitment software and land your dream job with our expert-written guides.
           </p>
           
-          <div className="max-w-md mx-auto relative group">
+          <div className="max-w-md mx-auto relative group w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
             <Input 
-              className="pl-10 h-12 bg-background/50 backdrop-blur border-white/10" 
+              className="pl-10 h-12 bg-background/50 backdrop-blur border-white/10 w-full" 
               placeholder="Search for ATS tips, keywords..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,7 +95,7 @@ export default function BlogPage() {
               key={cat} 
               variant={selectedCategory === cat ? 'default' : 'outline'} 
               className={cn(
-                "px-4 py-1.5 cursor-pointer transition-all uppercase text-[10px] font-black tracking-widest h-8",
+                "px-3 md:px-4 py-1.5 cursor-pointer transition-all uppercase text-[9px] md:text-[10px] font-black tracking-widest h-8",
                 selectedCategory === cat ? "bg-primary text-white" : "hover:bg-primary/10 border-white/10"
               )}
               onClick={() => setSelectedCategory(cat)}
@@ -130,8 +130,8 @@ export default function BlogPage() {
                     {post.category || 'Career'}
                   </Badge>
                 </div>
-                <CardContent className="p-8">
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 font-bold uppercase tracking-tighter">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center gap-4 text-[10px] md:text-xs text-muted-foreground mb-4 font-bold uppercase tracking-tighter">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} className="text-primary" /> 
                       {post.updatedAt?.toDate ? format(post.updatedAt.toDate(), 'MMM d, yyyy') : 'Recently'}
@@ -141,7 +141,7 @@ export default function BlogPage() {
                       ATS Expert
                     </span>
                   </div>
-                  <h2 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                  <h2 className="text-xl md:text-2xl font-bold mb-4 group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                     {post.title}
                   </h2>
                   <p className="text-muted-foreground text-sm mb-6 leading-relaxed line-clamp-3">
@@ -159,7 +159,7 @@ export default function BlogPage() {
           </div>
         )}
 
-        <section className="bg-primary/5 rounded-3xl p-12 border border-primary/10 backdrop-blur shadow-inner">
+        <section className="bg-primary/5 rounded-3xl p-8 md:p-12 border border-primary/10 backdrop-blur shadow-inner">
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-4">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">

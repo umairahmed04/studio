@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -48,7 +49,7 @@ export default function BlogPostPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 md:py-12">
         <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-8 group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           Back to Career Blog
@@ -57,7 +58,7 @@ export default function BlogPostPage() {
         <article className="max-w-4xl mx-auto space-y-12">
           <header className="space-y-6">
             <Badge className="px-3 py-1">{post.category || 'Career Insights'}</Badge>
-            <h1 className="text-4xl md:text-6xl font-headline font-bold leading-tight tracking-tight">
+            <h1 className="text-3xl md:text-6xl font-headline font-bold leading-tight tracking-tight text-foreground">
               {post.title}
             </h1>
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground pt-4 border-t">
@@ -75,7 +76,7 @@ export default function BlogPostPage() {
             </div>
           </header>
 
-          <div className="aspect-video relative rounded-3xl overflow-hidden shadow-2xl">
+          <div className="aspect-video relative rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl">
             <img 
               src={post.image || 'https://picsum.photos/seed/article/1200/600'} 
               alt={post.title}
@@ -83,10 +84,10 @@ export default function BlogPostPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
             <div className="lg:col-span-8 space-y-8">
               <div 
-                className="prose dark:prose-invert max-w-none prose-headings:font-headline prose-headings:font-bold prose-p:leading-relaxed prose-p:text-muted-foreground prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:p-6 prose-blockquote:rounded-r-xl"
+                className="prose dark:prose-invert max-w-none prose-headings:font-headline prose-headings:font-bold prose-p:leading-relaxed prose-p:text-muted-foreground prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:p-6 prose-blockquote:rounded-r-xl break-words"
                 dangerouslySetInnerHTML={{ __html: post.content }}
               />
               
@@ -100,7 +101,7 @@ export default function BlogPostPage() {
             </div>
 
             <aside className="lg:col-span-4 space-y-8">
-              <Card className="glass border-primary/20 sticky top-24">
+              <Card className="glass border-primary/20 lg:sticky lg:top-24">
                 <CardContent className="p-6 space-y-6">
                   <div className="text-center space-y-2">
                     <Sparkles className="w-8 h-8 text-primary mx-auto" />
