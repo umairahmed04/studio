@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -35,7 +36,8 @@ import {
   Link as LinkIcon,
   Copy,
   Wand2,
-  X
+  X,
+  Edit3
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -97,7 +99,6 @@ export default function PageEditor() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Stability Hook: Only initialize formData once per unique document load
   useEffect(() => {
     if (page && !formData) {
       setFormData(page);
@@ -108,19 +109,19 @@ export default function PageEditor() {
     if (!pageRef || !formData) return;
     setSaving(true);
     try {
-      // Functional Logic: Explicitly update status and metadata with sanitization
-      await updateDoc(pageRef, {
+      const sanitizedData = cleanForFirestore({
         title: formData.title || 'Untitled Page',
         slug: formData.slug || id,
         status: formData.status || 'draft',
         featuredImage: formData.featuredImage || '',
-        seo: cleanForFirestore(formData.seo || {}),
+        seo: formData.seo || {},
         updatedAt: serverTimestamp()
       });
-      toast({ title: "System Synchronized", description: `Page successfully set to ${formData.status}.` });
+      await updateDoc(pageRef, sanitizedData);
+      toast({ title: "Changes Saved", description: `Page is currently set to ${formData.status}.` });
     } catch (error) {
       console.error("Save Error:", error);
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not persist metadata changes." });
+      toast({ variant: "destructive", title: "Update Failed" });
     } finally {
       setSaving(false);
     }
@@ -135,17 +136,16 @@ export default function PageEditor() {
       content: getInitialContent(type),
       style: { backgroundColor: 'transparent', padding: 'py-20' }
     });
-    toast({ title: "Logic Block Injected", description: `Added a new ${type} section.` });
+    toast({ title: "Section Added" });
   };
 
   const deleteSection = async (sectionId: string) => {
-    if (!db || !confirm('Permanently remove this content logic?')) return;
+    if (!db || !confirm('Permanently remove this section?')) return;
     await deleteDoc(doc(db, 'pages', id as string, 'sections', sectionId));
   };
 
   const updateSection = async (sectionId: string, data: any) => {
     if (!db) return;
-    // Functional Logic: Sanitization for nested section content
     const sanitizedData = cleanForFirestore(data);
     await updateDoc(doc(db, 'pages', id as string, 'sections', sectionId), sanitizedData);
   };
@@ -175,7 +175,7 @@ export default function PageEditor() {
       const url = await getDownloadURL(snap.ref);
       
       setFormData({ ...formData, featuredImage: url });
-      toast({ title: "Asset Deployed", description: "Featured image has been updated." });
+      toast({ title: "Identity Asset Updated" });
     } catch (e) {
       toast({ variant: "destructive", title: "Upload Failed" });
     } finally {
@@ -204,7 +204,7 @@ export default function PageEditor() {
               </Badge>
             </div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-1">
-              Page Architect <span className="opacity-30">/</span> {formData.slug}
+              Page Editor <span className="opacity-30">/</span> {formData.slug}
             </p>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function PageEditor() {
           </Button>
           <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold shadow-lg shadow-primary/20 rounded-xl px-6">
             {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
-            Save & Publish
+            Save Changes
           </Button>
         </div>
       </div>
@@ -222,13 +222,13 @@ export default function PageEditor() {
       <Tabs defaultValue="sections">
         <TabsList className="grid w-full grid-cols-3 max-w-xl h-14 bg-muted/50 p-1 rounded-2xl border border-white/5">
           <TabsTrigger value="sections" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
-            <Layout size={16} className="mr-2" /> Builder
+            <Layout size={16} className="mr-2" /> Sections
           </TabsTrigger>
           <TabsTrigger value="seo" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
             <Globe size={16} className="mr-2" /> SEO
           </TabsTrigger>
           <TabsTrigger value="media" className="font-bold text-xs uppercase data-[state=active]:bg-background data-[state=active]:shadow-lg rounded-xl transition-all">
-            <ImageIcon size={16} className="mr-2" /> Assets
+            <ImageIcon size={16} className="mr-2" /> Identity
           </TabsTrigger>
         </TabsList>
 
@@ -237,7 +237,7 @@ export default function PageEditor() {
             {sectionsLoading ? (
               <div className="flex flex-col items-center justify-center p-20 space-y-4">
                 <Loader2 className="animate-spin text-primary" />
-                <p className="text-xs font-black uppercase text-muted-foreground tracking-widest">Compiling Logic...</p>
+                <p className="text-xs font-black uppercase text-muted-foreground tracking-widest">Compiling Sections...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -261,8 +261,8 @@ export default function PageEditor() {
                   <Plus size={32} />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-2xl font-headline font-bold">Deploy New Content</h4>
-                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">Extend the visual narrative of this page with a new structural block.</p>
+                  <h4 className="text-2xl font-headline font-bold">Inject New Section</h4>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">Extend this page with a new structural content block.</p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
                   <AddSectionButton icon={<Sparkles size={14} />} label="Hero" onClick={() => addSection('hero')} />
@@ -285,8 +285,8 @@ export default function PageEditor() {
                   <Search size={24} />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-headline font-bold">SEO Optimization Suite</CardTitle>
-                  <CardDescription>Configure search visibility and technical handles.</CardDescription>
+                  <CardTitle className="text-2xl font-headline font-bold">SEO Optimization</CardTitle>
+                  <CardDescription>Control how this page appears in search results.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -315,7 +315,7 @@ export default function PageEditor() {
                     value={formData.seo?.title || ''} 
                     onChange={(e) => setFormData({...formData, seo: { ...formData.seo, title: e.target.value }})} 
                     className="h-14 font-bold bg-background/50 border-white/10"
-                    placeholder="Search Engine Result Headline..."
+                    placeholder="Search Headline..."
                   />
                 </div>
               </div>
@@ -326,13 +326,13 @@ export default function PageEditor() {
                   rows={4} 
                   value={formData.seo?.description || ''} 
                   onChange={(e) => setFormData({...formData, seo: { ...formData.seo, description: e.target.value }})} 
-                  placeholder="Provide a compelling summary for search engine results..."
+                  placeholder="Compelling search summary..."
                   className="bg-background/50 border-white/10 text-sm leading-relaxed resize-none p-4"
                 />
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/5">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Publication Governance</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Publication Status</Label>
                 <div className="flex flex-wrap gap-4">
                   <StatusSelect 
                     value={formData.status} 
@@ -341,8 +341,7 @@ export default function PageEditor() {
                   <div className="flex-1 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
                     <CheckCircle2 className="text-primary shrink-0" size={18} />
                     <p className="text-[10px] leading-relaxed text-muted-foreground">
-                      Set this page to <strong>Published</strong> to deploy it live to your domain. 
-                      <strong>Draft</strong> mode keeps it restricted to the management console.
+                      Setting this page to <strong>Published</strong> makes it live on your domain.
                     </p>
                   </div>
                 </div>
@@ -360,7 +359,7 @@ export default function PageEditor() {
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-headline font-bold">Visual Identity</CardTitle>
-                  <CardDescription>Manage social previews and Open Graph assets.</CardDescription>
+                  <CardDescription>Social sharing and Open Graph assets.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -370,7 +369,6 @@ export default function PageEditor() {
                     <div className="space-y-2">
                        <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center justify-between">
                          Featured Image URL
-                         <span className="opacity-40 font-normal">Social Preview / OG</span>
                        </Label>
                        <div className="flex gap-2">
                          <div className="relative flex-1">
@@ -379,7 +377,7 @@ export default function PageEditor() {
                              value={formData.featuredImage || ''} 
                              onChange={(e) => setFormData({...formData, featuredImage: e.target.value})} 
                              className="pl-10 h-12 bg-background/50 font-mono text-[10px]" 
-                             placeholder="https://images.unsplash.com/..."
+                             placeholder="https://..."
                            />
                          </div>
                          <input type="file" ref={fileInputRef} onChange={handleFeaturedImageUpload} className="hidden" accept="image/*" />
@@ -435,13 +433,6 @@ export default function PageEditor() {
           border-color: hsl(var(--border) / 0.1);
           padding: 1rem;
         }
-        .quill-editor .ql-editor {
-          padding: 2rem;
-          line-height: 1.8;
-        }
-        .quill-editor .ql-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; }
-        .quill-editor .ql-editor h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.75rem; }
-        .quill-editor .ql-editor p { margin-bottom: 1.5rem; color: hsl(var(--muted-foreground)); }
       `}</style>
     </div>
   );
@@ -491,8 +482,8 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" className="h-10 px-4 font-bold rounded-xl border-white/10" onClick={() => setExpanded(!expanded)}>
-            {expanded ? "Collapse" : "Edit Section"}
-            {expanded ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
+            {expanded ? "Collapse" : "Edit"}
+            {expanded ? <ChevronUp size={16} className="ml-2" /> : <Edit3 size={16} className="ml-2" />}
           </Button>
           <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10 rounded-xl" onClick={onDelete}><Trash2 size={18} /></Button>
         </div>
@@ -503,12 +494,12 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-                <Type size={12} className="text-primary" /> Primary Heading
+                <Type size={12} className="text-primary" /> Section Heading
               </Label>
               <Input 
                 value={section.content?.heading || section.content?.title || ''} 
                 onChange={(e) => handleHeadingChange(e.target.value)} 
-                className="h-12 font-bold bg-background/50 border-white/5 focus:bg-background rounded-xl text-lg" 
+                className="h-12 font-bold bg-background/50 border-white/5 rounded-xl text-lg" 
               />
             </div>
 
@@ -531,7 +522,7 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
           </div>
 
           <div className="space-y-4">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Visual Body Editor</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Content Content</Label>
             <div className="bg-background rounded-[1.5rem] border border-white/5 shadow-2xl">
               <DebouncedRichEditor 
                 initialValue={section.content?.description || section.content?.subheading || section.content?.body || ''}
@@ -545,10 +536,6 @@ function SectionEditor({ section, onUpdate, onDelete, onMove, isFirst, isLast }:
   );
 }
 
-/**
- * Functional Logic: Performance Debouncer for Rich Text Editor.
- * Prevents cursor jumping by maintaining local state and syncing after typing pause.
- */
 function DebouncedRichEditor({ initialValue, onSync }: { initialValue: string, onSync: (v: string) => void }) {
   const [localValue, setLocalValue] = useState(initialValue);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -558,7 +545,7 @@ function DebouncedRichEditor({ initialValue, onSync }: { initialValue: string, o
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     syncTimeoutRef.current = setTimeout(() => {
       onSync(val);
-    }, 800); // 800ms debounce
+    }, 800);
   };
 
   return (
@@ -597,7 +584,7 @@ function StatusSelect({ value, onChange }: any) {
               <div className="w-2 h-2 rounded-full bg-amber-500" />
               <div className="flex flex-col text-left">
                  <span className="font-bold">Draft</span>
-                 <span className="text-[9px] opacity-60">Staging Mode</span>
+                 <span className="text-[9px] opacity-60">Hidden</span>
               </div>
            </div>
         </SelectItem>
@@ -606,7 +593,7 @@ function StatusSelect({ value, onChange }: any) {
               <div className="w-2 h-2 rounded-full bg-green-500" />
               <div className="flex flex-col text-left">
                  <span className="font-bold">Published</span>
-                 <span className="text-[9px] opacity-60">Live to Domain</span>
+                 <span className="text-[9px] opacity-60">Live</span>
               </div>
            </div>
         </SelectItem>

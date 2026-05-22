@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useCollection, useUser } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { Plus, Search, Edit3, Trash2, Loader2, FileCode, Globe, Eye, Sparkles, Copy, Filter, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 /**
  * @fileOverview Dynamic Page Ecosystem Management.
+ * Overhauled to fix Edit/Delete functionality and stabilize provisioning.
  */
 export default function PageManagement() {
   const db = useFirestore();
@@ -25,6 +26,7 @@ export default function PageManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const provisioned = useRef<Set<string>>(new Set());
 
   const pagesQuery = useMemo(() => {
     if (!db) return null;
@@ -39,8 +41,9 @@ export default function PageManagement() {
       const provision = async () => {
         const coreSlugs = ['home', 'about'];
         for (const slug of coreSlugs) {
-          const exists = pages.some((p: any) => p.slug === slug);
-          if (!exists) {
+          const existsInList = pages.some((p: any) => p.slug === slug);
+          if (!existsInList && !provisioned.current.has(slug)) {
+            provisioned.current.add(slug);
             try {
               await addDoc(collection(db, 'pages'), {
                 title: slug === 'about' ? 'About Us' : 'Home Page',
@@ -53,6 +56,7 @@ export default function PageManagement() {
               });
             } catch (e) {
               console.warn(`Failed to auto-provision ${slug} page`);
+              provisioned.current.delete(slug);
             }
           }
         }
@@ -84,7 +88,7 @@ export default function PageManagement() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Draft Provisioned", description: "Entering architect mode..." });
+      toast({ title: "Draft Created", description: "Opening editor..." });
       router.push(`/admin/pages/${docRef.id}`);
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to create page record." });
@@ -104,29 +108,36 @@ export default function PageManagement() {
         updatedAt: serverTimestamp()
       });
 
-      // Clone sections logic
       const sectionsSnap = await getDocs(collection(db, 'pages', original.id, 'sections'));
       for (const sDoc of sectionsSnap.docs) {
         await addDoc(collection(db, 'pages', docRef.id, 'sections'), sDoc.data());
       }
 
-      toast({ title: "Record Cloned", description: "All structural logic has been duplicated." });
+      toast({ title: "Page Duplicated", description: "Structural logic cloned." });
     } catch (e) {
       toast({ variant: "destructive", title: "Duplicate Failed" });
     }
   };
 
   const handleDelete = async (id: string, slug: string) => {
+    // Safety check for main system nodes
     if (slug === 'home' || slug === 'about') {
-      toast({ variant: "destructive", title: "Protected Node", description: "Core system pages cannot be removed." });
-      return;
+      const count = pages?.filter((p: any) => p.slug === slug).length || 0;
+      // Only protect if it's the last one
+      if (count <= 1) {
+        toast({ variant: "destructive", title: "Protected Node", description: "The primary system page cannot be removed." });
+        return;
+      }
     }
-    if (!db || !confirm('Permanently delete this page node?')) return;
+
+    if (!db || !confirm('Permanently delete this page?')) return;
+    
     try {
       await deleteDoc(doc(db, 'pages', id));
-      toast({ title: "Node Removed" });
+      toast({ title: "Page Deleted" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Deletion Blocked" });
+      console.error("Delete error", e);
+      toast({ variant: "destructive", title: "Deletion Failed" });
     }
   };
 
@@ -137,7 +148,7 @@ export default function PageManagement() {
           <h1 className="text-3xl font-headline font-bold">Page Management</h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Globe size={14} className="text-primary" />
-            Control site architecture and dynamic content logic.
+            Edit site architecture and dynamic content.
           </p>
         </div>
         <Button onClick={handleCreatePage} className="font-bold h-12 px-6 shadow-lg shadow-primary/20">
@@ -150,7 +161,7 @@ export default function PageManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <Input 
             className="pl-10 h-11 bg-background/50 border-white/5" 
-            placeholder="Search by title or /slug..." 
+            placeholder="Search pages..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -174,12 +185,12 @@ export default function PageManagement() {
         {loading ? (
           <div className="flex flex-col items-center justify-center p-20 space-y-4">
             <Loader2 className="animate-spin text-primary w-10 h-10" />
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Syncing Nodes...</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Syncing Database...</p>
           </div>
         ) : filteredPages.length === 0 ? (
           <Card className="p-20 text-center border-dashed border-2 bg-muted/5">
             <FileCode size={48} className="mx-auto text-muted-foreground opacity-20 mb-4" />
-            <p className="text-muted-foreground font-medium">No system nodes found matching the criteria.</p>
+            <p className="text-muted-foreground font-medium">No pages found matching your search.</p>
           </Card>
         ) : (
           filteredPages.map((page: any) => (
@@ -208,9 +219,9 @@ export default function PageManagement() {
                 
                 <div className="flex items-center gap-2 shrink-0">
                   <Button variant="outline" size="sm" className="font-bold h-10 border-white/5 hover:bg-primary/5 hover:text-primary transition-all" onClick={() => router.push(`/admin/pages/${page.id}`)}>
-                    <Edit3 size={16} className="mr-2" /> Architect
+                    <Edit3 size={16} className="mr-2" /> Edit
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50" onClick={() => handleDuplicate(page)} title="Duplicate Node">
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50" onClick={() => handleDuplicate(page)} title="Duplicate Page">
                     <Copy size={16} />
                   </Button>
                   <Button variant="ghost" size="icon" asChild className="h-10 w-10 text-muted-foreground hover:text-primary" title="View Live">
@@ -219,9 +230,8 @@ export default function PageManagement() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-10 w-10 text-destructive hover:bg-destructive/10 disabled:opacity-30" 
+                    className="h-10 w-10 text-destructive hover:bg-destructive/10" 
                     onClick={() => handleDelete(page.id, page.slug)}
-                    disabled={page.slug === 'home' || page.slug === 'about'}
                   >
                     <Trash2 size={16} />
                   </Button>
@@ -238,10 +248,9 @@ export default function PageManagement() {
             <Sparkles size={32} />
           </div>
           <div className="flex-1 space-y-1">
-            <h4 className="text-xl font-bold font-headline">Enterprise Logic Engine</h4>
+            <h4 className="text-xl font-bold font-headline">Enterprise CMS Engine</h4>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              Published CMS nodes override standard system logic. 
-              Use the architect to manage structural narratives, SEO, and visual identity without touching code.
+              Published pages override hardcoded logic. Use the editor to manage your site's professional narrative without touching code.
             </p>
           </div>
         </div>
