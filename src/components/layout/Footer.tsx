@@ -6,10 +6,13 @@ import { Scan, Twitter, Linkedin, Facebook, ExternalLink } from 'lucide-react';
 import { useFirestore, useDoc, useCollection } from '@/firebase';
 import { doc, collection, query } from 'firebase/firestore';
 
+/**
+ * @fileOverview Dynamic Global Footer.
+ * Maps CMS-driven menu items into structural layout columns.
+ */
 export function Footer() {
   const db = useFirestore();
 
-  // Fetch Dynamic Navigation Settings & Menus
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
   const { data: navSettings } = useDoc(navSettingsRef);
 
@@ -21,30 +24,16 @@ export function Footer() {
     return menus.find(m => m.id === navSettings.footer);
   }, [menus, navSettings]);
 
-  // Process Footer Menu into Columns
+  /**
+   * Process Footer Architecture:
+   * Level 0 nodes = Column Headers
+   * Level 1+ nodes = Child links within those columns
+   */
   const footerColumns = useMemo(() => {
     if (!activeFooterMenu?.items || activeFooterMenu.items.length === 0) {
-      // Fallback Static Columns
-      return [
-        { title: 'Tools', links: [
-          { label: 'ATS Scan Engine', href: '/ats-resume-checker' },
-          { label: 'Interactive CV Builder', href: '/cv-builder' },
-          { label: 'CV Compare & Match', href: '/cv-compare' },
-          { label: 'AI Bullet Optimizer', href: '/resume-optimizer' }
-        ]},
-        { title: 'Company', links: [
-          { label: 'Our Mission', href: '/about' },
-          { label: 'Career Insights', href: '/blog' },
-          { label: 'Support Hub', href: '/contact' }
-        ]},
-        { title: 'Legal', links: [
-          { label: 'Privacy Policy', href: '/privacy' },
-          { label: 'Terms of Service', href: '/terms' }
-        ]}
-      ];
+      return []; // CMS fallback (renders nothing or basic info)
     }
 
-    // Convert flat list with levels into Column structure
     const columns: any[] = [];
     let currentColumn: any = null;
 

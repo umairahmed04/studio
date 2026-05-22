@@ -37,10 +37,13 @@ interface MenuItem {
   label: string;
   href: string;
   target?: '_blank' | '_self';
-  children?: MenuItem[];
   level: number;
 }
 
+/**
+ * @fileOverview High-Performance Menu Management Hub.
+ * WordPress-style menu builder with dynamic hierarchy and location assignment.
+ */
 export default function MenuManagement() {
   const db = useFirestore();
   const { toast } = useToast();
@@ -60,12 +63,14 @@ export default function MenuManagement() {
   const { data: menus, loading: menusLoading } = useCollection(menusQuery);
   const { data: locations } = useDoc(locationsRef);
 
+  // Initialize active menu
   useEffect(() => {
     if (menus && menus.length > 0 && !activeMenuId) {
       setActiveMenuId(menus[0].id);
     }
   }, [menus, activeMenuId]);
 
+  // Load menu for editing
   useEffect(() => {
     if (menus && activeMenuId) {
       const menu = menus.find(m => m.id === activeMenuId);
@@ -77,7 +82,7 @@ export default function MenuManagement() {
 
   const handleCreateMenu = async () => {
     if (!db) return;
-    const name = prompt('Enter menu name:');
+    const name = prompt('Enter a name for this menu:');
     if (!name) return;
     try {
       const docRef = await addDoc(collection(db, 'menus'), {
@@ -86,20 +91,9 @@ export default function MenuManagement() {
         createdAt: serverTimestamp()
       });
       setActiveMenuId(docRef.id);
-      toast({ title: "Menu Created" });
+      toast({ title: "Menu Created", description: `"${name}" is ready for structuring.` });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error" });
-    }
-  };
-
-  const handleDeleteMenu = async () => {
-    if (!db || !activeMenuId || !confirm('Permanently delete this menu structure?')) return;
-    try {
-      await deleteDoc(doc(db, 'menus', activeMenuId));
-      setActiveMenuId(menus?.[0]?.id || '');
-      toast({ title: "Menu Deleted" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Error" });
+      toast({ variant: "destructive", title: "Error", description: "Could not create menu document." });
     }
   };
 
@@ -113,9 +107,9 @@ export default function MenuManagement() {
         updatedAt: serverTimestamp()
       });
       await setDoc(doc(db, 'menus', activeMenuId), sanitizedData, { merge: true });
-      toast({ title: "Menu Saved", description: "All changes are now live." });
+      toast({ title: "Menu Synced", description: "Changes are now live on the assigned locations." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Save Failed" });
+      toast({ variant: "destructive", title: "Save Failed", description: "Internal sync error." });
     } finally {
       setSaving(false);
     }
@@ -125,9 +119,9 @@ export default function MenuManagement() {
     if (!locationsRef) return;
     try {
       await setDoc(locationsRef, { [locKey]: menuId }, { merge: true });
-      toast({ title: "Location Updated" });
+      toast({ title: "Location Assigned", description: `Location "${locKey}" now points to selected menu.` });
     } catch (e) {
-      toast({ variant: "destructive", title: "Update Failed" });
+      toast({ variant: "destructive", title: "Assignment Failed" });
     }
   };
 
@@ -175,8 +169,8 @@ export default function MenuManagement() {
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Menu Management</h1>
-          <p className="text-muted-foreground">Build and organize your site's navigation structures.</p>
+          <h1 className="text-3xl font-headline font-bold">Menu Architect</h1>
+          <p className="text-muted-foreground">Manage your site hierarchy and dynamic navigation locations.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" onClick={handleCreateMenu} className="font-bold border-primary/20 text-primary">
@@ -184,7 +178,7 @@ export default function MenuManagement() {
            </Button>
            <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold shadow-lg shadow-primary/20 px-8">
              {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
-             Save Changes
+             Save Structure
            </Button>
         </div>
       </div>
@@ -192,7 +186,7 @@ export default function MenuManagement() {
       <Card className="glass border-white/5">
         <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest shrink-0">Select Menu:</span>
+            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest shrink-0">Current Menu:</span>
             <Select value={activeMenuId} onValueChange={setActiveMenuId}>
               <SelectTrigger className="w-full md:w-[250px] font-bold">
                 <SelectValue placeholder="Choose a menu..." />
@@ -203,7 +197,12 @@ export default function MenuManagement() {
             </Select>
           </div>
           {activeMenuId && (
-            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 font-bold" onClick={handleDeleteMenu}>
+            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 font-bold" onClick={async () => {
+              if (confirm('Delete this menu structure?')) {
+                await deleteDoc(doc(db!, 'menus', activeMenuId));
+                setActiveMenuId('');
+              }
+            }}>
               <Trash2 size={14} className="mr-2" /> Delete Menu
             </Button>
           )}
@@ -211,22 +210,22 @@ export default function MenuManagement() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Side: Available Content */}
+        {/* Left Side: Dynamic Sources */}
         <aside className="lg:col-span-4 space-y-6">
           <Card className="border-white/5 bg-card/50">
             <CardHeader className="py-4 border-b bg-muted/10">
               <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest">
                 <Layout size={14} className="text-primary" />
-                Add Menu Items
+                Inject Items
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Accordion type="multiple" className="w-full">
                 <AccordionItem value="pages" className="border-b px-4">
-                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Pages</AccordionTrigger>
+                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Dynamic Pages</AccordionTrigger>
                   <AccordionContent className="pt-0 pb-4 space-y-2">
                     {pages?.map(p => (
-                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group">
+                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
                         <span className="text-xs font-bold truncate pr-2">{p.title}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(p.title, `/${p.slug === 'home' ? '' : p.slug}`)}>
                           <Plus size={14} />
@@ -237,10 +236,10 @@ export default function MenuManagement() {
                 </AccordionItem>
 
                 <AccordionItem value="posts" className="border-b px-4">
-                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Blog Posts</AccordionTrigger>
+                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Blog Articles</AccordionTrigger>
                   <AccordionContent className="pt-0 pb-4 space-y-2">
                     {posts?.map(p => (
-                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group">
+                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
                         <span className="text-xs font-bold truncate pr-2">{p.title}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(p.title, `/blog/${p.slug || p.id}`)}>
                           <Plus size={14} />
@@ -251,22 +250,22 @@ export default function MenuManagement() {
                 </AccordionItem>
 
                 <AccordionItem value="custom" className="border-0 px-4">
-                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Custom Links</AccordionTrigger>
+                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Custom & External</AccordionTrigger>
                   <AccordionContent className="pt-0 pb-4 space-y-4">
                     <div className="space-y-3">
                       <div className="space-y-1">
-                         <Label className="text-[9px] font-black uppercase">URL</Label>
-                         <Input id="custom-url" placeholder="https://..." className="h-8 text-xs font-mono" />
+                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Absolute URL</Label>
+                         <Input id="custom-url" placeholder="https://..." className="h-9 text-xs font-mono" />
                       </div>
                       <div className="space-y-1">
-                         <Label className="text-[9px] font-black uppercase">Link Text</Label>
-                         <Input id="custom-label" placeholder="Menu Item" className="h-8 text-xs" />
+                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Display Label</Label>
+                         <Input id="custom-label" placeholder="Support Center" className="h-9 text-xs" />
                       </div>
-                      <Button className="w-full h-8 text-[10px] font-black uppercase" size="sm" onClick={() => {
+                      <Button className="w-full h-9 text-[10px] font-black uppercase" size="sm" onClick={() => {
                         const url = (document.getElementById('custom-url') as HTMLInputElement).value;
                         const label = (document.getElementById('custom-label') as HTMLInputElement).value;
                         if(url && label) addItemToMenu(label, url);
-                      }}>Add to Menu</Button>
+                      }}>Add to Structure</Button>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -274,28 +273,28 @@ export default function MenuManagement() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/5 bg-card/50">
+          <Card className="border-white/5 bg-card/50 overflow-hidden">
             <CardHeader className="py-4 border-b bg-muted/10">
               <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest">
                 <Settings2 size={14} className="text-accent" />
-                Menu Locations
+                Assign Locations
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
                <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground">Primary Header</Label>
+                    <Label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Header Navigation</Label>
                     <Select value={locations?.header || ''} onValueChange={(val) => handleAssignLocation('header', val)}>
-                      <SelectTrigger className="h-9 font-bold text-xs"><SelectValue placeholder="Assign a menu" /></SelectTrigger>
+                      <SelectTrigger className="h-10 font-bold text-xs"><SelectValue placeholder="Assign menu" /></SelectTrigger>
                       <SelectContent>
                         {menus?.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground">Main Footer</Label>
+                    <Label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Footer Navigation</Label>
                     <Select value={locations?.footer || ''} onValueChange={(val) => handleAssignLocation('footer', val)}>
-                      <SelectTrigger className="h-9 font-bold text-xs"><SelectValue placeholder="Assign a menu" /></SelectTrigger>
+                      <SelectTrigger className="h-10 font-bold text-xs"><SelectValue placeholder="Assign menu" /></SelectTrigger>
                       <SelectContent>
                         {menus?.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                       </SelectContent>
@@ -303,32 +302,35 @@ export default function MenuManagement() {
                   </div>
                </div>
                <p className="text-[9px] text-muted-foreground italic leading-relaxed pt-4 border-t border-white/5">
-                 Changes to location assignments reflect instantly on the public website.
+                 Changes to assignments are pushed instantly to all site visitors.
                </p>
             </CardContent>
           </Card>
         </aside>
 
-        {/* Right Side: Menu Builder */}
+        {/* Right Side: Reordering Structure */}
         <main className="lg:col-span-8 space-y-6">
-          <Card className="border-white/5 bg-card/50 min-h-[600px] flex flex-col">
+          <Card className="border-white/5 bg-card/50 min-h-[600px] flex flex-col shadow-2xl">
             <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-muted/5">
               <div className="space-y-1">
-                <CardTitle className="text-xl font-headline font-bold">Menu Structure</CardTitle>
-                <CardDescription>Drag and drop items to reorder and create submenus.</CardDescription>
+                <CardTitle className="text-xl font-headline font-bold">Structure Builder</CardTitle>
+                <CardDescription>Reorder and nest items using the controls below.</CardDescription>
               </div>
-              <Input 
-                value={editingMenu?.name || ''} 
-                onChange={(e) => editingMenu && setEditingMenu({ ...editingMenu, name: e.target.value })} 
-                className="w-48 h-8 font-bold text-xs" 
-                placeholder="Menu Name"
-              />
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black uppercase text-muted-foreground">Rename:</span>
+                <Input 
+                  value={editingMenu?.name || ''} 
+                  onChange={(e) => editingMenu && setEditingMenu({ ...editingMenu, name: e.target.value })} 
+                  className="w-40 h-8 font-bold text-xs" 
+                  placeholder="Menu Name"
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-8 flex-1">
               {!editingMenu || editingMenu.items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-20 space-y-4 border-2 border-dashed rounded-3xl opacity-40">
                   <Menu size={48} />
-                  <p className="text-sm font-medium">Add items from the left to start building your menu.</p>
+                  <p className="text-sm font-medium">Inject content from the left panel to begin.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -353,10 +355,10 @@ export default function MenuManagement() {
                       
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-white/5">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveItem(idx, 'up')} disabled={idx === 0}><ArrowUp size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveItem(idx, 'down')} disabled={idx === editingMenu.items.length - 1}><ArrowDown size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => adjustNesting(idx, 'left')} disabled={item.level === 0}><ChevronLeft size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => adjustNesting(idx, 'right')} disabled={item.level >= 2}><ChevronRight size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'up')} disabled={idx === 0} title="Move Up"><ArrowUp size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'down')} disabled={idx === editingMenu.items.length - 1} title="Move Down"><ArrowDown size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'left')} disabled={item.level === 0} title="Outdent"><ChevronLeft size={14} /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'right')} disabled={item.level >= 2} title="Indent"><ChevronRight size={14} /></Button>
                         </div>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => removeItem(item.id)}>
                           <Trash2 size={14} />
@@ -368,14 +370,15 @@ export default function MenuManagement() {
               )}
             </CardContent>
             <CardFooter className="p-6 border-t bg-muted/10 flex justify-between items-center">
-              {editingMenu && (
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                  {editingMenu.items.length} Root Items & Submenus
-                </p>
-              )}
-              <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-8">
+              <div className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                   {editingMenu?.items.length || 0} Dynamic Nodes Configured
+                 </span>
+              </div>
+              <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-10 h-11">
                 {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-                Save Menu Structure
+                Save Structure
               </Button>
             </CardFooter>
           </Card>

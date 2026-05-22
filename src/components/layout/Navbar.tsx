@@ -34,10 +34,14 @@ import { ThemeToggle } from './ThemeToggle';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { doc, collection, query } from 'firebase/firestore';
+import { doc, collection, query, onSnapshot } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+/**
+ * @fileOverview High-Performance Dynamic Navigation.
+ * Fetches and renders nested CMS menus with real-time synchronization.
+ */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
@@ -46,12 +50,15 @@ export function Navbar() {
   const userRef = useMemo(() => user && db ? doc(db, 'users', user.uid) : null, [user, db]);
   const { data: userData } = useDoc(userRef);
 
+  // Fetch Navigation Assignments
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
   const { data: navSettings } = useDoc(navSettingsRef);
 
+  // Fetch All Menus
   const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
   const { data: menus } = useCollection(menusQuery);
 
+  // Determine Active Header Menu
   const activeHeaderMenu = useMemo(() => {
     if (!menus || !navSettings?.header) return null;
     return menus.find(m => m.id === navSettings.header);
@@ -60,12 +67,13 @@ export function Navbar() {
   const isAdmin = userData?.role === 'admin' || userData?.role === 'editor' || user?.email === 'itexpert47@gmail.com';
 
   const handleSignOut = () => {
-    if (auth) {
-      signOut(auth);
-    }
+    if (auth) signOut(auth);
   };
 
-  // Process Nested Menu Structure for Frontend
+  /**
+   * Transforms flat Firestore array with levels into a nested recursive tree.
+   * Supports up to 3 levels of nesting (Standard CMS Architecture).
+   */
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
     
@@ -110,30 +118,13 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation Engine */}
         <nav className="hidden lg:flex items-center gap-8">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
-              Tools <ChevronDown size={14} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[480px] p-4 mt-2 grid grid-cols-2 gap-2" align="start">
-              <ToolItem href="/ats-resume-checker" icon={<Search />} color="blue" title="ATS Resume Scan" desc="Check your CV score" />
-              <ToolItem href="/cv-builder" icon={<Layout />} color="purple" title="Interactive Builder" desc="Recruiter-ready CVs" />
-              <ToolItem href="/cv-compare" icon={<ArrowLeftRight />} color="orange" title="Compare & Match" desc="Side-by-side analysis" />
-              <ToolItem href="/resume-optimizer" icon={<Wand2 />} color="green" title="AI Bullet Optimizer" desc="Auto-rewrite bullets" />
-              <DropdownMenuSeparator className="col-span-2 my-2" />
-              <ToolItem href="/interview-prep" icon={<Mic />} color="primary" title="AI Interview Prep" desc="Practice voice rounds" premium />
-              <ToolItem href="/settings/sharing" icon={<Share2 />} color="accent" title="Resume Share" desc="Public online profile" premium />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {processedMenuItems.length === 0 ? (
-            // Fallback Menu
-            <>
-              <Link href="/templates" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">Templates</Link>
-              <Link href="/blog" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">Blog</Link>
-              <Link href="/about" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground">About</Link>
-            </>
+            // Fallback Menu if CMS is unconfigured
+            <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
+               System Initializing...
+            </div>
           ) : (
             processedMenuItems.map((item) => (
               item.children && item.children.length > 0 ? (
@@ -228,12 +219,6 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="p-3 cursor-pointer">
-                  <Link href="/settings/sharing" className="flex items-center gap-2">
-                    <Share2 size={16} />
-                    <span>Public Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="p-3 cursor-pointer">
                   <Link href="/profile" className="flex items-center gap-2">
                     <UserCircle size={16} />
                     <span>Account Settings</span>
@@ -258,6 +243,7 @@ export function Navbar() {
             )
           )}
 
+          {/* Mobile Navigation Integration */}
           <div className="lg:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -266,37 +252,26 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-2">
-                <DropdownMenuItem asChild className="p-3">
-                  <Link href="/ats-resume-checker" className="font-bold">ATS Scan</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="p-3">
-                  <Link href="/interview-prep" className="font-bold">AI Interview Prep</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="p-3">
-                  <Link href="/settings/sharing" className="font-bold">Resume Share</Link>
-                </DropdownMenuItem>
-                
-                {/* Dynamic Mobile Menu Items */}
                 {processedMenuItems.map((item) => (
                   <React.Fragment key={item.id}>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="p-3">
-                      <Link href={item.href} className="font-bold">{item.label}</Link>
+                      <Link href={item.href} className="font-bold uppercase text-xs tracking-widest">{item.label}</Link>
                     </DropdownMenuItem>
                     {item.children?.map((child: any) => (
                       <DropdownMenuItem key={child.id} asChild className="p-3 pl-6">
-                        <Link href={child.href} className="text-sm">{child.label}</Link>
+                        <Link href={child.href} className="text-xs font-medium text-muted-foreground">{child.label}</Link>
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator />
                   </React.Fragment>
                 ))}
 
                 {user ? (
-                   <DropdownMenuItem asChild className="p-3 font-bold border-t">
+                   <DropdownMenuItem asChild className="p-3 font-bold">
                       <Link href="/dashboard">My Dashboard</Link>
                     </DropdownMenuItem>
                 ) : !userLoading && (
-                  <DropdownMenuItem asChild className="p-3 font-bold text-primary bg-primary/5 border-t">
+                  <DropdownMenuItem asChild className="p-3 font-bold text-primary bg-primary/5">
                     <Link href="/signup">Free Sign Up</Link>
                   </DropdownMenuItem>
                 )}
@@ -306,33 +281,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-function ToolItem({ href, icon, color, title, desc, premium }: any) {
-  const colorMap: any = {
-    blue: "bg-blue-500/10 text-blue-600",
-    purple: "bg-purple-500/10 text-purple-600",
-    orange: "bg-orange-500/10 text-orange-600",
-    green: "bg-green-500/10 text-green-600",
-    primary: "bg-primary/10 text-primary",
-    accent: "bg-accent/10 text-accent-foreground",
-  };
-
-  return (
-    <DropdownMenuItem asChild className="p-3 cursor-pointer group">
-      <Link href={href} className="flex items-center gap-3">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", colorMap[color])}>
-          {icon && typeof icon !== 'string' ? React.cloneElement(icon as React.ReactElement, { size: 20 }) : null}
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold">{title}</span>
-            {premium && <Badge className="text-[7px] h-3 px-1 bg-gradient-to-r from-amber-400 to-orange-500 border-none uppercase font-black tracking-tighter">Premium</Badge>}
-          </div>
-          <span className="text-[10px] text-muted-foreground">{desc}</span>
-        </div>
-      </Link>
-    </DropdownMenuItem>
   );
 }
