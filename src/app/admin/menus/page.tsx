@@ -79,36 +79,70 @@ export default function MenuManagement() {
     { label: 'Interview Prep', href: '/interview-prep' },
   ];
 
-  // 1. Auto-Provision Header and Footer Menus (Fixed to prevent duplicates)
+  // 1. Auto-Provision Header and Footer Menus with Default Items
   useEffect(() => {
     const provision = async () => {
       if (!db || menusLoading || !menus || isProvisioning.current) return;
       
-      const standardMenus = ['Header Menu', 'Footer Menu'];
-      let created = false;
+      const standardMenus = [
+        { 
+          name: 'Header Menu', 
+          items: [
+            { id: 'def-h1', label: 'AI Tools', href: '#', level: 0 },
+            { id: 'def-h1-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
+            { id: 'def-h1-2', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
+            { id: 'def-h1-3', label: 'Job Matcher', href: '/job-description-matcher', level: 1 },
+            { id: 'def-h2', label: 'Templates', href: '/templates', level: 0 },
+            { id: 'def-h3', label: 'Blog', href: '/blog', level: 0 },
+            { id: 'def-h4', label: 'About', href: '/about', level: 0 }
+          ]
+        },
+        { 
+          name: 'Footer Menu', 
+          items: [
+            { id: 'def-f1', label: 'Tools', href: '#', level: 0 },
+            { id: 'def-f1-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
+            { id: 'def-f1-2', label: 'CV Builder', href: '/cv-builder', level: 1 },
+            { id: 'def-f2', label: 'Company', href: '#', level: 0 },
+            { id: 'def-f2-1', label: 'About Us', href: '/about', level: 1 },
+            { id: 'def-f2-2', label: 'Blog', href: '/blog', level: 1 },
+            { id: 'def-f3', label: 'Legal', href: '#', level: 0 },
+            { id: 'def-f3-1', label: 'Privacy Policy', href: '/privacy', level: 1 },
+            { id: 'def-f3-2', label: 'Terms', href: '/terms', level: 1 }
+          ]
+        }
+      ];
 
-      for (const name of standardMenus) {
-        const exists = menus.some(m => m.name === name);
+      let createdAny = false;
+
+      for (const config of standardMenus) {
+        const exists = menus.some(m => m.name === config.name);
         if (!exists) {
           isProvisioning.current = true;
           try {
-            await addDoc(collection(db, 'menus'), {
-              name,
-              items: [],
+            const docRef = await addDoc(collection(db, 'menus'), {
+              name: config.name,
+              items: config.items,
               createdAt: serverTimestamp()
             });
-            created = true;
+
+            // Auto-assign location if settings doc is empty for that location
+            if (locationsRef) {
+              const locKey = config.name.toLowerCase().includes('header') ? 'header' : 'footer';
+              await setDoc(locationsRef, { [locKey]: docRef.id }, { merge: true });
+            }
+            createdAny = true;
           } catch (e) {
-            console.warn(`Failed to provision ${name}`);
+            console.warn(`Failed to provision ${config.name}`);
           }
         }
       }
-      if (created) {
-        toast({ title: "System Menus Initialized" });
+      if (createdAny) {
+        toast({ title: "System Menus Synchronized", description: "Default navigation structure created." });
       }
     };
     provision();
-  }, [db, menus, menusLoading, toast]);
+  }, [db, menus, menusLoading, toast, locationsRef]);
 
   // 2. Initialize active menu
   useEffect(() => {
