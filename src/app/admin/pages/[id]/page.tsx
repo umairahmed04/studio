@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
@@ -43,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import dynamic from 'next/dynamic';
-import { cn } from '@/lib/utils';
+import { cn, cleanForFirestore } from '@/lib/utils';
 
 // Import Quill styles
 import 'react-quill-new/dist/quill.snow.css';
@@ -109,13 +108,13 @@ export default function PageEditor() {
     if (!pageRef || !formData) return;
     setSaving(true);
     try {
-      // Functional Logic: Explicitly update status and metadata
+      // Functional Logic: Explicitly update status and metadata with sanitization
       await updateDoc(pageRef, {
         title: formData.title || 'Untitled Page',
         slug: formData.slug || id,
         status: formData.status || 'draft',
         featuredImage: formData.featuredImage || '',
-        seo: formData.seo || {},
+        seo: cleanForFirestore(formData.seo || {}),
         updatedAt: serverTimestamp()
       });
       toast({ title: "System Synchronized", description: `Page successfully set to ${formData.status}.` });
@@ -146,8 +145,9 @@ export default function PageEditor() {
 
   const updateSection = async (sectionId: string, data: any) => {
     if (!db) return;
-    const { id: _sid, ...saveData } = data;
-    await updateDoc(doc(db, 'pages', id as string, 'sections', sectionId), saveData);
+    // Functional Logic: Sanitization for nested section content
+    const sanitizedData = cleanForFirestore(data);
+    await updateDoc(doc(db, 'pages', id as string, 'sections', sectionId), sanitizedData);
   };
 
   const moveSection = async (section: any, direction: 'up' | 'down') => {

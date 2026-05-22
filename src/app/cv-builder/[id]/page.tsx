@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -39,7 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from "@/components/ui/label";
 import { AiAssistant } from '@/components/tools/AiAssistant';
 import { PhotoUpload } from '@/components/tools/PhotoUpload';
-import { cn } from '@/lib/utils';
+import { cn, cleanForFirestore } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -95,14 +94,17 @@ export default function ResumeBuilder() {
     if (!resumeRef || !formData || !isDirty) return;
     if (!silent) setSaveLoading(true);
     try {
+      // Functional Logic: Clean undefined and redundant ID before Firestore write
+      const sanitizedData = cleanForFirestore(formData);
       await updateDoc(resumeRef, {
-        ...formData,
+        ...sanitizedData,
         updatedAt: serverTimestamp()
       });
       setIsDirty(false);
       if (!silent) toast({ title: "Progress Secured" });
     } catch (error) {
-      if (!silent) toast({ variant: "destructive", title: "Sync Failed" });
+      console.error("Save Error:", error);
+      if (!silent) toast({ variant: "destructive", title: "Sync Failed", description: "Internal data validation error." });
     } finally {
       if (!silent) setSaveLoading(false);
     }
