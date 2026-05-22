@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useStorage } from '@/firebase';
+import { useFirestore, useDoc, useCollection, useStorage } from '@/firebase';
 import { doc, updateDoc, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,7 +22,6 @@ import {
   ChevronUp,
   Sparkles,
   HelpCircle,
-  Activity,
   Layers,
   Globe,
   ImageIcon,
@@ -31,7 +31,8 @@ import {
   CheckCircle2,
   Upload,
   Link as LinkIcon,
-  Edit3
+  Edit3,
+  Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,7 @@ const quillFormats = [
 /**
  * @fileOverview High-Performance Page Architect.
  * WordPress-level management system for dynamic site pages.
+ * Optimized to load existing data and prevent duplicate creation.
  */
 export default function PageEditor() {
   const { id } = useParams();
@@ -92,32 +94,41 @@ export default function PageEditor() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasLoaded = useRef(false);
 
-  // CRITICAL FIX: Ensure formData is synced correctly when page loads
+  // CRITICAL FIX: Ensure formData is synced correctly when existing page loads
   useEffect(() => {
-    if (page && !formData) {
-      setFormData(page);
+    if (page && !hasLoaded.current) {
+      setFormData({
+        title: page.title || '',
+        slug: page.slug || '',
+        status: page.status || 'draft',
+        featuredImage: page.featuredImage || '',
+        seo: page.seo || { title: '', description: '', ogImage: '' }
+      });
+      hasLoaded.current = true;
     }
-  }, [page, formData]);
+  }, [page]);
 
   const handleSavePage = async () => {
     if (!pageRef || !formData) return;
     setSaving(true);
     try {
       const sanitizedData = cleanForFirestore({
-        title: formData.title || 'Untitled Page',
-        slug: formData.slug || id,
-        status: formData.status || 'draft',
-        featuredImage: formData.featuredImage || '',
-        seo: formData.seo || {},
+        ...formData,
         updatedAt: serverTimestamp()
       });
-      // CRITICAL FIX: Explicitly update existing doc instead of creating new
+      
+      // Use updateDoc to ensure we ONLY update the existing record
       await updateDoc(pageRef, sanitizedData);
-      toast({ title: "Changes Saved", description: `Page is currently set to ${formData.status}.` });
+      
+      toast({ 
+        title: formData.status === 'published' ? "Page Updated & Live" : "Draft Progress Saved", 
+        description: `CMS configuration for "${formData.title}" is synchronized.` 
+      });
     } catch (error) {
       console.error("Save Error:", error);
-      toast({ variant: "destructive", title: "Update Failed" });
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not sync data to Firestore." });
     } finally {
       setSaving(false);
     }
@@ -191,7 +202,7 @@ export default function PageEditor() {
           <Button variant="ghost" size="icon" onClick={() => router.push('/admin/pages')} className="rounded-xl"><ArrowLeft size={20} /></Button>
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{formData.title}</h1>
+              <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{formData.title || 'Untitled'}</h1>
               <Badge variant="outline" className={cn(
                 "text-[9px] uppercase tracking-widest h-5",
                 formData.status === 'published' ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
@@ -210,7 +221,7 @@ export default function PageEditor() {
           </Button>
           <Button size="sm" onClick={handleSavePage} disabled={saving} className="font-bold shadow-lg shadow-primary/20 rounded-xl px-6">
             {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save size={16} className="mr-2" />}
-            Save Changes
+            {formData.status === 'published' ? 'Update Live Page' : 'Save Draft'}
           </Button>
         </div>
       </div>
@@ -311,12 +322,12 @@ export default function PageEditor() {
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Browser Title</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Page Title</Label>
                 <Input 
-                  value={formData.seo?.title || ''} 
-                  onChange={(e) => setFormData({...formData, seo: { ...formData.seo, title: e.target.value }})} 
+                  value={formData.title} 
+                  onChange={(e) => setFormData({...formData, title: e.target.value})} 
                   className="h-14 font-bold bg-background/50 border-white/10"
-                  placeholder="Search Headline..."
+                  placeholder="Main Heading..."
                 />
               </div>
 

@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { useMemo, useEffect, useState } from 'react';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, limit, onSnapshot } from 'firebase/firestore';
 import { PageRenderer } from '@/components/cms/PageRenderer';
 import { ToolLayout } from '@/components/tools/ToolLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,23 +12,34 @@ import Link from 'next/link';
 
 /**
  * @fileOverview About Us Page with dynamic CMS prioritization.
- * If a CMS page with slug "about" exists and is published, it overrides the static layout.
+ * Listens for CMS changes in real-time to ensure instant synchronization.
  */
 export default function AboutPage() {
   const db = useFirestore();
+  const [cmsPage, setCmsPage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const aboutQuery = useMemo(() => {
-    if (!db) return null;
-    return query(
+  useEffect(() => {
+    if (!db) return;
+
+    const q = query(
       collection(db, 'pages'), 
       where('slug', '==', 'about'), 
       where('status', '==', 'published'),
       limit(1)
     );
-  }, [db]);
 
-  const { data: cmsPages, loading } = useCollection(aboutQuery);
-  const cmsPage = cmsPages?.[0];
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setCmsPage({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id });
+      } else {
+        setCmsPage(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [db]);
 
   if (loading) {
     return (
@@ -37,7 +49,7 @@ export default function AboutPage() {
     );
   }
 
-  // 1. If CMS Content exists, prioritize it
+  // 1. If CMS Content exists and is published, prioritize it
   if (cmsPage) {
     return <PageRenderer pageId={cmsPage.id} />;
   }

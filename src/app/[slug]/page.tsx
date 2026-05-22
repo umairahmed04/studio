@@ -1,42 +1,52 @@
+
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, onSnapshot } from 'firebase/firestore';
 import { PageRenderer } from '@/components/cms/PageRenderer';
 import { Loader2 } from 'lucide-react';
 
 /**
  * @fileOverview High-Performance Dynamic Content Hub.
  * Fetches and renders dynamic CMS pages by their unique SEO-friendly slugs.
- * Strictly filters for 'published' status to prevent draft leaks.
+ * Optimized with real-time listeners for instant synchronization.
  */
 export default function DynamicCmsPage() {
   const { slug } = useParams();
   const db = useFirestore();
-  const [isNotFound, setIsNotFound] = useState(false);
+  const [page, setPage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const pageQuery = useMemo(() => {
-    if (!db || !slug) return null;
-    return query(
+  useEffect(() => {
+    if (!db || !slug) return;
+
+    // Use a real-time listener for instant CMS sync
+    const q = query(
       collection(db, 'pages'), 
       where('slug', '==', slug), 
       where('status', '==', 'published'),
       limit(1)
     );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        setPage(null);
+        setError(true);
+      } else {
+        setPage({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id });
+        setError(false);
+      }
+      setLoading(false);
+    }, (err) => {
+      console.error("CMS Fetch Error:", err);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [db, slug]);
-
-  const { data: pages, loading } = useCollection(pageQuery);
-  const page = pages?.[0] as any;
-
-  useEffect(() => {
-    if (!loading && (!pages || pages.length === 0)) {
-      // Small delay to prevent layout flicker on fast loads
-      const timer = setTimeout(() => setIsNotFound(true), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, pages]);
 
   useEffect(() => {
     if (page?.seo?.title || page?.title) {
@@ -47,10 +57,6 @@ export default function DynamicCmsPage() {
     }
   }, [page]);
 
-  if (isNotFound) {
-    notFound();
-  }
-
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
@@ -60,7 +66,9 @@ export default function DynamicCmsPage() {
     );
   }
 
-  if (!page) return null;
+  if (error || !page) {
+    notFound();
+  }
 
   return (
     <main className="min-h-screen animate-in fade-in duration-700">
