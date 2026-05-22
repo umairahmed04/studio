@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useCollection, useDoc } from '@/firebase';
-import { collection, query, orderBy, doc, setDoc, serverTimestamp, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, setDoc, serverTimestamp, deleteDoc, addDoc, getDocs, limit, where } from 'firebase/firestore';
 import { 
   Plus, 
   Trash2, 
@@ -42,7 +42,7 @@ interface MenuItem {
 
 /**
  * @fileOverview High-Performance Menu Management Hub.
- * WordPress-style menu builder with dynamic hierarchy and location assignment.
+ * WordPress-style menu builder with dynamic hierarchy, drag-and-drop reordering, and location assignment.
  */
 export default function MenuManagement() {
   const db = useFirestore();
@@ -51,6 +51,7 @@ export default function MenuManagement() {
   const [activeMenuId, setActiveMenuId] = useState<string>('');
   const [editingMenu, setEditingMenu] = useState<{ name: string; items: MenuItem[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   // Fetch Collections for Menu Sources
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
@@ -63,14 +64,40 @@ export default function MenuManagement() {
   const { data: menus, loading: menusLoading } = useCollection(menusQuery);
   const { data: locations } = useDoc(locationsRef);
 
-  // Initialize active menu
+  // 1. Auto-Provision Header and Footer Menus
+  useEffect(() => {
+    const provision = async () => {
+      if (!db || menusLoading || !menus) return;
+      
+      const standardMenus = ['Header Menu', 'Footer Menu'];
+      for (const name of standardMenus) {
+        const exists = menus.some(m => m.name === name);
+        if (!exists) {
+          try {
+            await addDoc(collection(db, 'menus'), {
+              name,
+              items: [],
+              createdAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.warn(`Failed to provision ${name}`);
+          }
+        }
+      }
+    };
+    provision();
+  }, [db, menus, menusLoading]);
+
+  // 2. Initialize active menu
   useEffect(() => {
     if (menus && menus.length > 0 && !activeMenuId) {
-      setActiveMenuId(menus[0].id);
+      // Prioritize Header Menu if available
+      const header = menus.find(m => m.name === 'Header Menu');
+      setActiveMenuId(header ? header.id : menus[0].id);
     }
   }, [menus, activeMenuId]);
 
-  // Load menu for editing
+  // 3. Load menu for editing
   useEffect(() => {
     if (menus && activeMenuId) {
       const menu = menus.find(m => m.id === activeMenuId);
@@ -165,11 +192,33 @@ export default function MenuManagement() {
     setEditingMenu({ ...editingMenu, items: newItems });
   };
 
+  // Drag and Drop Functional Handlers
+  const handleDragStart = (idx: number) => {
+    setDraggedIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === idx) return;
+    
+    const newItems = [...editingMenu!.items];
+    const item = newItems[draggedIdx];
+    newItems.splice(draggedIdx, 1);
+    newItems.splice(idx, 0, item);
+    
+    setEditingMenu({ ...editingMenu!, items: newItems });
+    setDraggedIdx(idx);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Menu Architect</h1>
+          <h1 className="text-3xl font-headline font-bold">Menu Management</h1>
           <p className="text-muted-foreground">Manage your site hierarchy and dynamic navigation locations.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -308,13 +357,13 @@ export default function MenuManagement() {
           </Card>
         </aside>
 
-        {/* Right Side: Reordering Structure */}
+        {/* Right Side: Structure Builder with Drag & Drop */}
         <main className="lg:col-span-8 space-y-6">
           <Card className="border-white/5 bg-card/50 min-h-[600px] flex flex-col shadow-2xl">
             <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-muted/5">
               <div className="space-y-1">
                 <CardTitle className="text-xl font-headline font-bold">Structure Builder</CardTitle>
-                <CardDescription>Reorder and nest items using the controls below.</CardDescription>
+                <CardDescription>Drag the grip icons to reorder or use the arrow controls.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black uppercase text-muted-foreground">Rename:</span>
@@ -337,14 +386,19 @@ export default function MenuManagement() {
                   {editingMenu.items.map((item, idx) => (
                     <div 
                       key={item.id} 
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDragEnd={handleDragEnd}
                       className={cn(
-                        "group p-3 rounded-xl border border-white/5 bg-background shadow-sm flex items-center justify-between transition-all hover:border-primary/20",
+                        "group p-3 rounded-xl border border-white/5 bg-background shadow-sm flex items-center justify-between transition-all hover:border-primary/20 cursor-move",
+                        draggedIdx === idx && "opacity-50 scale-[0.98] border-primary/40",
                         item.level === 1 && "ml-8 bg-muted/10",
                         item.level === 2 && "ml-16 bg-muted/20"
                       )}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-0.5 shrink-0 opacity-40">
+                        <div className="flex items-center gap-0.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
                           <GripVertical size={16} />
                         </div>
                         <div className="flex flex-col">
