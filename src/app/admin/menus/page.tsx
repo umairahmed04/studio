@@ -184,6 +184,16 @@ export default function MenuManagement() {
         updatedAt: serverTimestamp()
       });
       await setDoc(doc(db, 'menus', activeMenuId), sanitizedData, { merge: true });
+      
+      // Ensure locations are synced if this is a standard menu
+      if (locationsRef) {
+        const locKey = editingMenu.name.toLowerCase().includes('header') ? 'header' : 
+                       editingMenu.name.toLowerCase().includes('footer') ? 'footer' : null;
+        if (locKey) {
+          await setDoc(locationsRef, { [locKey]: activeMenuId }, { merge: true });
+        }
+      }
+      
       toast({ title: "Structure Saved" });
     } catch (e) {
       toast({ variant: "destructive", title: "Save Failed" });

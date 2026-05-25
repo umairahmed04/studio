@@ -7,51 +7,96 @@ import { useFirestore, useDoc, useCollection } from '@/firebase';
 import { doc, collection, query } from 'firebase/firestore';
 
 /**
- * @fileOverview Dynamic Global Footer.
+ * @fileOverview Dynamic Global Footer with Robust Fallback.
  * Maps hierarchical CMS menu items into original column-based structure.
+ * Guaranteed visibility even before CMS initialization.
  */
+
+// Original static structure used as a fallback if database is empty
+const DEFAULT_FOOTER_MENU = [
+  { label: 'Tools', level: 0, items: [
+    { label: 'ATS Scan Engine', href: '/ats-resume-checker' },
+    { label: 'Interactive CV Builder', href: '/cv-builder' },
+    { label: 'CV Compare & Match', href: '/cv-compare' },
+    { label: 'AI Bullet Optimizer', href: '/resume-optimizer' },
+    { label: 'Premium Templates', href: '/templates' }
+  ]},
+  { label: 'Company', level: 0, items: [
+    { label: 'Our Mission', href: '/about' },
+    { label: 'Career Insights', href: '/blog' },
+    { label: 'Support Hub', href: '/contact' }
+  ]},
+  { label: 'Legal', level: 0, items: [
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Legal Disclaimer', href: '/disclaimer' }
+  ]}
+];
+
 export function Footer() {
   const db = useFirestore();
 
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
-  const { data: navSettings } = useDoc(navSettingsRef);
+  const { data: navSettings, loading: settingsLoading } = useDoc(navSettingsRef);
 
   const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
-  const { data: menus } = useCollection(menusQuery);
+  const { data: menus, loading: menusLoading } = useCollection(menusQuery);
 
+  /**
+   * Robust Menu Resolver:
+   * 1. Try finding by ID from settings
+   * 2. Fallback to finding by Name "Footer Menu"
+   */
   const activeFooterMenu = useMemo(() => {
-    if (!menus || !navSettings?.footer) return null;
-    return menus.find(m => m.id === navSettings.footer);
+    if (!menus) return null;
+    
+    let menu = null;
+    if (navSettings?.footer) {
+      menu = menus.find(m => m.id === navSettings.footer);
+    }
+    
+    if (!menu) {
+      menu = menus.find(m => m.name === 'Footer Menu');
+    }
+    
+    return menu;
   }, [menus, navSettings]);
 
   /**
-   * Process Footer Logic:
-   * Level 0 nodes = Column Headers (Tools, Company, Legal)
-   * Level 1+ nodes = Child links within those columns
+   * Process Footer Columns:
+   * Maps dynamic levels (0 = Header, 1+ = Link) into the visual grid.
    */
   const footerColumns = useMemo(() => {
-    if (!activeFooterMenu?.items || activeFooterMenu.items.length === 0) {
-      return [];
+    // If we have dynamic data from CMS, process it
+    if (activeFooterMenu?.items && activeFooterMenu.items.length > 0) {
+      const columns: any[] = [];
+      let currentColumn: any = null;
+
+      activeFooterMenu.items.forEach((item: any) => {
+        if (item.level === 0) {
+          currentColumn = { title: item.label, links: [] };
+          columns.push(currentColumn);
+        } else if (item.level >= 1 && currentColumn) {
+          currentColumn.links.push({ 
+            label: item.label, 
+            href: item.href, 
+            target: item.target 
+          });
+        }
+      });
+      
+      if (columns.length > 0) return columns;
     }
 
-    const columns: any[] = [];
-    let currentColumn: any = null;
+    // If CMS is loading, wait
+    if (menusLoading || settingsLoading) return [];
 
-    activeFooterMenu.items.forEach((item: any) => {
-      if (item.level === 0) {
-        currentColumn = { title: item.label, links: [] };
-        columns.push(currentColumn);
-      } else if (item.level >= 1 && currentColumn) {
-        currentColumn.links.push({ 
-          label: item.label, 
-          href: item.href, 
-          target: item.target 
-        });
-      }
-    });
-
-    return columns;
-  }, [activeFooterMenu]);
+    // Fallback: Return the original requested structure if DB is empty
+    return DEFAULT_FOOTER_MENU.map(col => ({
+      title: col.label,
+      links: col.items
+    }));
+  }, [activeFooterMenu, menusLoading, settingsLoading]);
 
   return (
     <footer className="bg-background border-t py-16">
