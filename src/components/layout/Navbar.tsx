@@ -33,6 +33,7 @@ import { doc, collection, query } from 'firebase/firestore';
 /**
  * @fileOverview High-Performance Dynamic Navigation.
  * Fetches and renders nested CMS menus with recursive hierarchy.
+ * Optimized with composite keys to prevent React reconciliation warnings.
  */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
@@ -117,20 +118,20 @@ export function Navbar() {
                System Ready...
             </div>
           ) : (
-            processedMenuItems.map((item) => (
+            processedMenuItems.map((item, idx) => (
               item.children && item.children.length > 0 ? (
-                <DropdownMenu key={item.id}>
+                <DropdownMenu key={`${item.id}-${idx}`}>
                   <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
                     {item.label} <ChevronDown size={14} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
-                    {item.children.map((child: any) => (
+                    {item.children.map((child: any, cIdx: number) => (
                       child.children && child.children.length > 0 ? (
-                        <DropdownMenuSub key={child.id}>
+                        <DropdownMenuSub key={`${child.id}-${cIdx}`}>
                           <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
                           <DropdownMenuSubContent className="w-56 p-2">
-                             {child.children.map((sub: any) => (
-                               <DropdownMenuItem key={sub.id} asChild className="p-3 cursor-pointer">
+                             {child.children.map((sub: any, sIdx: number) => (
+                               <DropdownMenuItem key={`${sub.id}-${sIdx}`} asChild className="p-3 cursor-pointer">
                                   <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
                                     {sub.label}
                                     {sub.target === '_blank' && <ExternalLink size={10} />}
@@ -140,7 +141,7 @@ export function Navbar() {
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
                       ) : (
-                        <DropdownMenuItem key={child.id} asChild className="p-3 cursor-pointer">
+                        <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
                           <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
                             {child.label}
                             {child.target === '_blank' && <ExternalLink size={10} />}
@@ -152,7 +153,7 @@ export function Navbar() {
                 </DropdownMenu>
               ) : (
                 <Link 
-                  key={item.id} 
+                  key={`${item.id}-${idx}`} 
                   href={item.href} 
                   target={item.target || '_self'}
                   className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground flex items-center gap-1"
@@ -243,13 +244,13 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-2">
-                {processedMenuItems.map((item) => (
-                  <React.Fragment key={item.id}>
+                {processedMenuItems.map((item, mIdx) => (
+                  <React.Fragment key={`${item.id}-${mIdx}`}>
                     <DropdownMenuItem asChild className="p-3">
                       <Link href={item.href} target={item.target || '_self'} className="font-bold uppercase text-xs tracking-widest">{item.label}</Link>
                     </DropdownMenuItem>
-                    {item.children?.map((child: any) => (
-                      <DropdownMenuItem key={child.id} asChild className="p-3 pl-6">
+                    {item.children?.map((child: any, cIdx: number) => (
+                      <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 pl-6">
                         <Link href={child.href} target={child.target || '_self'} className="text-xs font-medium text-muted-foreground">{child.label}</Link>
                       </DropdownMenuItem>
                     ))}
