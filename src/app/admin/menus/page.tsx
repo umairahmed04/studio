@@ -458,7 +458,7 @@ export default function MenuManagement() {
                 <div className="space-y-2">
                   {editingMenu.items.map((item, idx) => (
                     <div 
-                      key={item.id} 
+                      key={`${item.id}-${idx}`} 
                       draggable
                       onDragStart={() => handleDragStart(idx)}
                       onDragOver={(e) => handleDragOver(e, idx)}
