@@ -84,7 +84,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
-      <body className="font-body antialiased min-h-screen flex flex-col selection:bg-primary/30 selection:text-primary">
+      <body 
+        className="font-body antialiased min-h-screen flex flex-col selection:bg-primary/30 selection:text-primary"
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
