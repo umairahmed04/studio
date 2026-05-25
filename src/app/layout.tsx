@@ -12,11 +12,16 @@ export const metadata: Metadata = {
   title: 'ATSResumeScan | Free AI ATS Resume Checker & CV Optimizer',
   description: 'Instantly check your ATS resume score, optimize with AI, and beat recruitment bots. The #1 free tool for ATS-friendly resume building and keyword optimization.',
   keywords: 'ATS resume checker, resume score, AI resume builder, beat ATS, resume optimization, CV builder, free resume scan',
+  metadataBase: new URL('https://atsresumescan.com'),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'ATSResumeScan | Beat the Recruitment Bots with AI',
     description: 'Optimize your resume for ATS systems in seconds. Free score breakdown and AI-powered improvements.',
     type: 'website',
     url: 'https://atsresumescan.com',
+    siteName: 'ATSResumeScan',
   },
   twitter: {
     card: 'summary_large_image',

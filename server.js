@@ -1,10 +1,6 @@
 /**
- * Production Server Entry Point for Namecheap/cPanel
- * 
- * Instructions:
- * 1. Build the app locally: npm run build
- * 2. Upload the .next, public, and server.js files to your server
- * 3. In cPanel "Setup Node.js App", set the "Application startup file" to server.js
+ * Production Server Entry Point for Scala Hosting / cPanel
+ * Optimized for Passenger and custom Node.js environments.
  */
 const { createServer } = require('http');
 const { parse } = require('url');
@@ -14,7 +10,7 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-// Namecheap/Passenger usually passes the port via process.env.PORT
+// Scala Hosting / Passenger usually passes the port via process.env.PORT
 const port = process.env.PORT || 3000;
 
 app.prepare().then(() => {
@@ -23,7 +19,7 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   }).listen(port, (err) => {
     if (err) throw err;
-    console.log(`> ATS Resume Scan Ready on port ${port}`);
+    console.log(`> ATS Resume Scan Production Server Ready on port ${port}`);
   });
 }).catch((ex) => {
   console.error(ex.stack);

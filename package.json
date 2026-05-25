@@ -1,19 +1,16 @@
 {
   "name": "ats-resume-force-reset",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 9002",
+    "dev": "next dev -p 3000",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "NODE_ENV=production next build",
+    "build": "next build",
     "start": "next start",
-    "server": "node server.js",
+    "server": "NODE_ENV=production node server.js",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "repo:reset": "rm -rf .git && git init && git add . && git commit -m 'System Reset: Ready for Fresh GitHub Connection'",
-    "repo:nuke": "rm -rf .git && git config --global --unset-all credential.helper && git init && git add . && git commit -m 'Absolute Fresh Start' && echo 'Reset Complete. PLEASE REFRESH BROWSER PAGE.'",
-    "repo:fix-sync": "git config pull.rebase false && git pull origin main --allow-unrelated-histories || echo 'Configuration set. Please try syncing again.'"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.2.1",
