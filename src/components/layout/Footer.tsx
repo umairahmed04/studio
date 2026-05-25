@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { Scan, Twitter, Linkedin, Facebook, ExternalLink } from 'lucide-react';
+import { Scan, Twitter, Linkedin, Facebook } from 'lucide-react';
 import { useFirestore, useDoc, useCollection } from '@/firebase';
 import { doc, collection, query } from 'firebase/firestore';
 
@@ -26,7 +26,7 @@ export function Footer() {
 
   /**
    * Process Footer Logic:
-   * Level 0 nodes = Column Headers
+   * Level 0 nodes = Column Headers (Tools, Company, Legal)
    * Level 1+ nodes = Child links within those columns
    */
   const footerColumns = useMemo(() => {
@@ -83,25 +83,43 @@ export function Footer() {
           </div>
 
           {/* Dynamic Columns: Tools, Company, Legal */}
-          {footerColumns.map((col: any, idx: number) => (
-            <div key={`${col.title}-${idx}`}>
-              <h4 className="font-headline font-bold mb-6 uppercase text-xs tracking-widest text-primary">{col.title}</h4>
-              <ul className="space-y-4">
-                {col.links.map((link: any, lIdx: number) => (
-                  <li key={`${link.label}-${lIdx}`}>
-                    <Link 
-                      href={link.href} 
-                      target={link.target || '_self'}
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-                    >
-                      {link.label}
-                      {link.target === '_blank' && <ExternalLink size={10} className="opacity-40" />}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {footerColumns.length > 0 ? (
+            footerColumns.map((col: any, idx: number) => (
+              <div key={`${col.title}-${idx}`}>
+                <h4 className="font-headline font-bold mb-6 uppercase text-xs tracking-widest text-primary">{col.title}</h4>
+                <ul className="space-y-4">
+                  {col.links.map((link: any, lIdx: number) => (
+                    <li key={`${link.label}-${lIdx}`}>
+                      <Link 
+                        href={link.href} 
+                        target={link.target || '_self'}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors inline-block"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          ) : (
+            // Placeholder skeleton during load
+            <>
+              <div className="space-y-4 animate-pulse">
+                <div className="h-4 w-20 bg-muted rounded" />
+                <div className="h-3 w-32 bg-muted rounded" />
+                <div className="h-3 w-24 bg-muted rounded" />
+              </div>
+              <div className="space-y-4 animate-pulse">
+                <div className="h-4 w-20 bg-muted rounded" />
+                <div className="h-3 w-32 bg-muted rounded" />
+              </div>
+              <div className="space-y-4 animate-pulse">
+                <div className="h-4 w-20 bg-muted rounded" />
+                <div className="h-3 w-32 bg-muted rounded" />
+              </div>
+            </>
+          )}
         </div>
         
         <div className="mt-16 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-6">

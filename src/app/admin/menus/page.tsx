@@ -19,17 +19,11 @@ import {
   ArrowDown, 
   ChevronLeft,
   Menu,
-  Wand2,
-  Settings2,
   ExternalLink,
   Edit3,
   Tag,
   Check,
-  X,
-  Sparkles,
-  Info,
-  Type,
-  FileText
+  Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -63,16 +57,13 @@ export default function MenuManagement() {
   const [customLink, setCustomLink] = useState({ label: '', url: '', isExternal: false });
 
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
-  const blogQuery = useMemo(() => db ? query(collection(db, 'blog_posts'), orderBy('updatedAt', 'desc')) : null, [db]);
   const catQuery = useMemo(() => db ? query(collection(db, 'blog_categories'), orderBy('name', 'asc')) : null, [db]);
   const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
   const locationsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
 
   const { data: pages } = useCollection(pagesQuery);
-  const { data: posts } = useCollection(blogQuery);
   const { data: categories } = useCollection(catQuery);
   const { data: menus, loading: menusLoading } = useCollection(menusQuery);
-  const { data: locations } = useDoc(locationsRef);
 
   const systemTools = [
     { label: 'ATS Resume Scan', href: '/ats-resume-checker', icon: 'Search', desc: 'Check your CV score' },
@@ -108,21 +99,16 @@ export default function MenuManagement() {
         { 
           name: 'Footer Menu', 
           items: [
-            // Column 1: Tools
             { id: 'f-tools-h', label: 'Tools', href: '#', level: 0 },
             { id: 'f-ats', label: 'ATS Scan Engine', href: '/ats-resume-checker', level: 1 },
             { id: 'f-cvb', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
             { id: 'f-cvc', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
             { id: 'f-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1 },
             { id: 'f-tpl', label: 'Premium Templates', href: '/templates', level: 1 },
-            
-            // Column 2: Company
             { id: 'f-comp-h', label: 'Company', href: '#', level: 0 },
             { id: 'f-abt', label: 'Our Mission', href: '/about', level: 1 },
             { id: 'f-blg', label: 'Career Insights', href: '/blog', level: 1 },
             { id: 'f-cnt', label: 'Support Hub', href: '/contact', level: 1 },
-            
-            // Column 3: Legal
             { id: 'f-leg-h', label: 'Legal', href: '#', level: 0 },
             { id: 'f-pri', label: 'Privacy Policy', href: '/privacy', level: 1 },
             { id: 'f-trm', label: 'Terms of Service', href: '/terms', level: 1 },
@@ -152,7 +138,7 @@ export default function MenuManagement() {
           }
         }
       }
-      if (createdAny) toast({ title: "Original Menus Restored & Synced" });
+      if (createdAny) toast({ title: "Original Menus Initialized" });
     };
     provision();
   }, [db, menus, menusLoading, toast, locationsRef]);
@@ -198,7 +184,7 @@ export default function MenuManagement() {
         updatedAt: serverTimestamp()
       });
       await setDoc(doc(db, 'menus', activeMenuId), sanitizedData, { merge: true });
-      toast({ title: "Structure Secured" });
+      toast({ title: "Structure Saved" });
     } catch (e) {
       toast({ variant: "destructive", title: "Save Failed" });
     } finally {
@@ -275,8 +261,8 @@ export default function MenuManagement() {
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Menu Management</h1>
-          <p className="text-muted-foreground">Manage your site hierarchy and dynamic mega-menus.</p>
+          <h1 className="text-3xl font-headline font-bold">Menu Management</h1>
+          <p className="text-muted-foreground">Manage your site hierarchy and dynamic footers.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" onClick={handleCreateMenu} className="font-bold border-primary/20 text-primary">
@@ -331,9 +317,7 @@ export default function MenuManagement() {
                   <AccordionContent className="pt-0 pb-4 space-y-2">
                     {systemTools.map((tool, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/10 group hover:border-primary/40 transition-all">
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[11px] font-bold truncate">{tool.label}</span>
-                        </div>
+                        <span className="text-[11px] font-bold truncate">{tool.label}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(tool.label, tool.href, tool)}>
                           <Plus size={14} />
                         </Button>
@@ -379,8 +363,8 @@ export default function MenuManagement() {
                          <Input 
                            value={customLink.url}
                            onChange={(e) => setCustomLink({...customLink, url: e.target.value})}
-                           placeholder="https://... or #anchor" 
-                           className="h-9 text-xs font-mono" 
+                           placeholder="https://..." 
+                           className="h-9 text-xs" 
                          />
                       </div>
                       <div className="space-y-1">
@@ -450,9 +434,7 @@ export default function MenuManagement() {
                         )}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-0.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-                            <GripVertical size={16} />
-                          </div>
+                          <GripVertical size={16} className="opacity-40 group-hover:opacity-100 transition-opacity" />
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-bold">{item.label}</span>
@@ -482,7 +464,7 @@ export default function MenuManagement() {
                             item.level === 1 && "ml-8",
                             item.level === 2 && "ml-16"
                           )}>
-                            Settings & Submenu Meta
+                            Item Meta Data
                           </AccordionTrigger>
                           <AccordionContent className={cn(
                             "pt-2 pb-4 space-y-4",
@@ -495,12 +477,12 @@ export default function MenuManagement() {
                                   <Input 
                                     value={item.description || ''} 
                                     onChange={(e) => updateItemField(item.id, 'description', e.target.value)}
-                                    placeholder="Brief sub-text..." 
+                                    placeholder="Sub-text..." 
                                     className="h-8 text-xs bg-background/50" 
                                   />
                                </div>
                                <div className="space-y-1.5">
-                                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1"><Tag size={10} /> Icon Name (Lucide)</Label>
+                                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1"><Tag size={10} /> Icon Name</Label>
                                   <Input 
                                     value={item.iconName || ''} 
                                     onChange={(e) => updateItemField(item.id, 'iconName', e.target.value)}
@@ -514,7 +496,7 @@ export default function MenuManagement() {
                                     checked={item.isPremium || false} 
                                     onCheckedChange={(checked) => updateItemField(item.id, 'isPremium', !!checked)} 
                                   />
-                                  <Label htmlFor={`premium-${item.id}`} className="text-[10px] font-bold cursor-pointer">Mark as Premium Tool</Label>
+                                  <Label htmlFor={`premium-${item.id}`} className="text-[10px] font-bold cursor-pointer">Mark as Premium</Label>
                                </div>
                             </div>
                           </AccordionContent>
