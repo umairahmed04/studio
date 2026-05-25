@@ -1,8 +1,27 @@
-# Firebase App Hosting Configuration
-# Reset to baseline state for fresh repository link
+# Firebase App Hosting Production Configuration
+# Optimized for Next.js 15 Standalone Output
+
+runtime: nodejs20
 
 runConfig:
-  maxInstances: 1
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
 
-# Metadata will be re-detected upon linking to 
-# the new GitHub repository.
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability: [BUILD, RUNTIME]
+  - variable: GOOGLE_API_KEY
+    availability: [RUNTIME]
+  - variable: NODE_ENV
+    value: production
