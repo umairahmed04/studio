@@ -89,6 +89,8 @@ export default function MenuManagement() {
             { id: 'h-cvb', label: 'Interactive Builder', href: '/cv-builder', level: 1, iconName: 'Layout', description: 'Recruiter-ready CVs' },
             { id: 'h-cvc', label: 'Compare & Match', href: '/cv-compare', level: 1, iconName: 'ArrowLeftRight', description: 'Side-by-side analysis' },
             { id: 'h-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1, iconName: 'Wand2', description: 'Auto-rewrite bullets' },
+            { id: 'h-lia', label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', level: 1, iconName: 'ShieldCheck', description: 'Social presence scan' },
+            { id: 'h-lsg', label: 'LinkedIn Summary', href: '/linkedin-summary-generator', level: 1, iconName: 'Linkedin', description: 'Bio generator' },
             { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: true },
             { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: true },
             { id: 'h-tpl', label: 'Templates', href: '/templates', level: 0 },
@@ -138,7 +140,7 @@ export default function MenuManagement() {
           }
         }
       }
-      if (createdAny) toast({ title: "Original Menus Initialized" });
+      if (createdAny) toast({ title: "Navigation Structure Initialized" });
     };
     provision();
   }, [db, menus, menusLoading, toast, locationsRef]);
@@ -185,7 +187,6 @@ export default function MenuManagement() {
       });
       await setDoc(doc(db, 'menus', activeMenuId), sanitizedData, { merge: true });
       
-      // Ensure locations are synced if this is a standard menu
       if (locationsRef) {
         const locKey = editingMenu.name.toLowerCase().includes('header') ? 'header' : 
                        editingMenu.name.toLowerCase().includes('footer') ? 'footer' : null;
@@ -361,6 +362,25 @@ export default function MenuManagement() {
                         </Button>
                       </div>
                     ))}
+                    {/* Common Slugs Fallback Injection */}
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
+                      <span className="text-xs font-bold truncate pr-2">Our Mission</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu("Our Mission", "/about")}>
+                        <Plus size={14} />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
+                      <span className="text-xs font-bold truncate pr-2">Career Insights</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu("Career Insights", "/blog")}>
+                        <Plus size={14} />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
+                      <span className="text-xs font-bold truncate pr-2">Support Hub</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu("Support Hub", "/contact")}>
+                        <Plus size={14} />
+                      </Button>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 
