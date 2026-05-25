@@ -385,7 +385,7 @@ export default function AdminSettings() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-muted-foreground">Site Name</label>
                   <Input 
-                    value={formData.seo?.purple siteName || ''} 
+                    value={formData.seo?.siteName || ''} 
                     onChange={(e) => setFormData({...formData, seo: {...formData.seo, siteName: e.target.value}})}
                   />
                 </div>
@@ -421,15 +421,6 @@ export default function AdminSettings() {
                 </CardDescription>
              </CardHeader>
              <CardContent className="space-y-6">
-                <Alert className="bg-primary/10 border-primary/20">
-                  <AlertCircle className="h-4 w-4 text-primary" />
-                  <AlertTitle className="font-bold">Scala Hosting Migration Hint</AlertTitle>
-                  <AlertDescription className="text-xs">
-                    Since your app is now hosted on Scala Hosting, use this tool to sync your cloud data across environments. 
-                    This export includes all Page Sections, Menus, and dynamic configurations.
-                  </AlertDescription>
-                </Alert>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                    <div className="p-4 rounded-xl bg-background border flex items-center gap-3">
                       <FileCode className="text-blue-500" />
