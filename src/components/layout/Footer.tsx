@@ -57,7 +57,7 @@ export function Footer() {
     <footer className="bg-background border-t py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Column 1: Original Brand Identity */}
+          {/* Column 1: Brand Identity */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-primary-foreground shadow-lg">
@@ -82,7 +82,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Dynamic Columns: Original Tools, Company, Legal */}
+          {/* Dynamic Columns: Tools, Company, Legal */}
           {footerColumns.map((col: any, idx: number) => (
             <div key={`${col.title}-${idx}`}>
               <h4 className="font-headline font-bold mb-6 uppercase text-xs tracking-widest text-primary">{col.title}</h4>

@@ -108,18 +108,25 @@ export default function MenuManagement() {
         { 
           name: 'Footer Menu', 
           items: [
+            // Column 1: Tools
             { id: 'f-tools-h', label: 'Tools', href: '#', level: 0 },
-            { id: 'f-ats', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
-            { id: 'f-cvb', label: 'CV Builder', href: '/cv-builder', level: 1 },
-            { id: 'f-rzo', label: 'Resume Optimizer', href: '/resume-optimizer', level: 1 },
+            { id: 'f-ats', label: 'ATS Scan Engine', href: '/ats-resume-checker', level: 1 },
+            { id: 'f-cvb', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
+            { id: 'f-cvc', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
+            { id: 'f-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1 },
+            { id: 'f-tpl', label: 'Premium Templates', href: '/templates', level: 1 },
+            
+            // Column 2: Company
             { id: 'f-comp-h', label: 'Company', href: '#', level: 0 },
-            { id: 'f-abt', label: 'About Us', href: '/about', level: 1 },
-            { id: 'f-blg', label: 'Blog', href: '/blog', level: 1 },
-            { id: 'f-cnt', label: 'Contact', href: '/contact', level: 1 },
+            { id: 'f-abt', label: 'Our Mission', href: '/about', level: 1 },
+            { id: 'f-blg', label: 'Career Insights', href: '/blog', level: 1 },
+            { id: 'f-cnt', label: 'Support Hub', href: '/contact', level: 1 },
+            
+            // Column 3: Legal
             { id: 'f-leg-h', label: 'Legal', href: '#', level: 0 },
             { id: 'f-pri', label: 'Privacy Policy', href: '/privacy', level: 1 },
-            { id: 'f-trm', label: 'Terms', href: '/terms', level: 1 },
-            { id: 'f-dsc', label: 'Disclaimer', href: '/disclaimer', level: 1 }
+            { id: 'f-trm', label: 'Terms of Service', href: '/terms', level: 1 },
+            { id: 'f-dsc', label: 'Legal Disclaimer', href: '/disclaimer', level: 1 }
           ]
         }
       ];
