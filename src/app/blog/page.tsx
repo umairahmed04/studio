@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Calendar, User, ArrowRight, TrendingUp, Target, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Calendar, User, ArrowRight, TrendingUp, Target, ShieldCheck, Loader2, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useCollection, useDoc } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -17,13 +17,12 @@ export default function BlogPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const blogSettingsRef = useMemo(() => db ? doc(db, 'settings', 'blog') : null, [db]);
-  const { data: blogSettings } = useDoc(blogSettingsRef);
+  // Fetch Categories Collection
+  const catQuery = useMemo(() => db ? query(collection(db, 'blog_categories'), orderBy('name', 'asc')) : null, [db]);
+  const { data: categoriesData } = useCollection(catQuery);
 
   const categories = useMemo(() => {
-    const dynamic = blogSettings?.categories;
-    // Use defaults if settings haven't been configured or the array is empty
-    const list = (dynamic && dynamic.length > 0) ? dynamic : [
+    const list = categoriesData?.map(c => c.name) || [
       'ATS Resume Tips',
       'Resume Examples',
       'Career Advice',
@@ -31,12 +30,10 @@ export default function BlogPage() {
       'LinkedIn Optimization'
     ];
     return ['All', ...list];
-  }, [blogSettings]);
+  }, [categoriesData]);
 
   const blogQuery = useMemo(() => {
     if (!db) return null;
-    // Simplify query by removing orderBy when where is present to avoid index requirement
-    // Sorting will be handled on the client side
     return query(
       collection(db, 'blog_posts'), 
       where('status', '==', 'published')
@@ -48,7 +45,6 @@ export default function BlogPage() {
   const filteredAndSortedPosts = useMemo(() => {
     if (!posts) return [];
     
-    // Sort on client side to avoid Firestore Index requirement for MVP
     const sorted = [...posts].sort((a: any, b: any) => {
       const dateA = a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0;
       const dateB = b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0;

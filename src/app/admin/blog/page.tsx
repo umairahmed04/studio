@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useMemo, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useFirestore, useCollection, useDoc } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, setDoc, getDocs } from 'firebase/firestore';
 import { 
   Plus, 
   Search, 
@@ -16,13 +17,16 @@ import {
   ExternalLink,
   Tag,
   X,
-  Check
+  Check,
+  Layout,
+  Globe,
+  Settings2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, cleanForFirestore } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +35,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export default function AdminBlogList() {
   const db = useFirestore();
@@ -40,10 +45,8 @@ export default function AdminBlogList() {
   
   // Category Management State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [savingCategories, setSavingCategories] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [catSaving, setCatSaving] = useState(false);
 
   // Fetch Posts
   const blogQuery = useMemo(() => {
@@ -53,9 +56,9 @@ export default function AdminBlogList() {
 
   const { data: posts, loading } = useCollection(blogQuery);
 
-  // Fetch Global Blog Settings (Categories)
-  const blogSettingsRef = useMemo(() => db ? doc(db, 'settings', 'blog') : null, [db]);
-  const { data: blogSettings, loading: settingsLoading } = useDoc(blogSettingsRef);
+  // Fetch Categories Collection
+  const catQuery = useMemo(() => db ? query(collection(db, 'blog_categories'), orderBy('name', 'asc')) : null, [db]);
+  const { data: categories, loading: categoriesLoading } = useCollection(catQuery);
 
   const filteredPosts = posts?.filter(p => 
     (p.title || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -70,7 +73,7 @@ export default function AdminBlogList() {
         content: '',
         excerpt: '',
         status: 'draft',
-        category: blogSettings?.categories?.[0] || 'General',
+        category: categories?.[0]?.name || 'General',
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         image: 'https://picsum.photos/seed/' + Date.now() + '/800/600',
@@ -88,60 +91,43 @@ export default function AdminBlogList() {
     toast({ title: "Post Deleted" });
   };
 
-  const handleAddCategory = async () => {
-    if (!db || !blogSettingsRef || !newCategoryName.trim()) return;
-    setSavingCategories(true);
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !editingCategory?.name) return;
+    setCatSaving(true);
     try {
-      const currentCategories = blogSettings?.categories || [];
-      const trimmed = newCategoryName.trim();
-      if (currentCategories.includes(trimmed)) {
-        toast({ variant: "destructive", title: "Duplicate Category", description: "This category already exists." });
-        return;
+      const slug = editingCategory.slug || editingCategory.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+      const data = cleanForFirestore({
+        ...editingCategory,
+        slug,
+        updatedAt: serverTimestamp()
+      });
+
+      if (editingCategory.id) {
+        await setDoc(doc(db, 'blog_categories', editingCategory.id), data, { merge: true });
+      } else {
+        await addDoc(collection(db, 'blog_categories'), {
+          ...data,
+          createdAt: serverTimestamp()
+        });
       }
-      const updatedCategories = [...currentCategories, trimmed];
-      await setDoc(blogSettingsRef, { categories: updatedCategories }, { merge: true });
-      setNewCategoryName('');
-      toast({ title: "Category Added", description: `${trimmed} is now live.` });
+
+      toast({ title: "Category Saved" });
+      setEditingCategory(null);
     } catch (error) {
-      toast({ variant: "destructive", title: "Save Error" });
+      toast({ variant: "destructive", title: "Error Saving Category" });
     } finally {
-      setSavingCategories(false);
+      setCatSaving(false);
     }
   };
 
-  const handleUpdateCategory = async (index: number) => {
-    if (!db || !blogSettingsRef || !editValue.trim()) return;
-    setSavingCategories(true);
+  const handleDeleteCategory = async (id: string) => {
+    if (!db || !confirm('Delete this category? This will not delete posts, but they will become uncategorized.')) return;
     try {
-      const currentCategories = [...(blogSettings?.categories || [])];
-      const trimmed = editValue.trim();
-      
-      // Check for duplicates elsewhere in the array
-      if (currentCategories.some((c, i) => i !== index && c === trimmed)) {
-        toast({ variant: "destructive", title: "Duplicate Category" });
-        return;
-      }
-
-      currentCategories[index] = trimmed;
-      await setDoc(blogSettingsRef, { categories: currentCategories }, { merge: true });
-      setEditingIndex(null);
-      setEditValue('');
-      toast({ title: "Category Renamed" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Update Error" });
-    } finally {
-      setSavingCategories(false);
-    }
-  };
-
-  const handleDeleteCategory = async (catToDelete: string) => {
-    if (!db || !blogSettingsRef || !confirm(`Delete "${catToDelete}"? Posts in this category will need updating.`)) return;
-    try {
-      const updatedCategories = (blogSettings?.categories || []).filter((c: string) => c !== catToDelete);
-      await setDoc(blogSettingsRef, { categories: updatedCategories }, { merge: true });
+      await deleteDoc(doc(db, 'blog_categories', id));
       toast({ title: "Category Removed" });
     } catch (error) {
-      toast({ variant: "destructive", title: "Delete Error" });
+      toast({ variant: "destructive", title: "Delete Failed" });
     }
   };
 
@@ -150,11 +136,11 @@ export default function AdminBlogList() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-headline font-bold">Blog Management</h1>
-          <p className="text-muted-foreground">Manage articles and content taxonomies.</p>
+          <p className="text-muted-foreground">Manage articles and professional content taxonomies.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => setIsCategoryModalOpen(true)} className="h-12 font-bold border-primary/20 text-primary">
-            <Tag size={18} className="mr-2" /> Manage Categories
+            <Layout size={18} className="mr-2" /> Blog Categories
           </Button>
           <Button onClick={handleCreateNew} className="h-12 px-6 font-bold shadow-lg shadow-primary/20">
             <Plus size={18} className="mr-2" /> Create New Post
@@ -218,98 +204,145 @@ export default function AdminBlogList() {
         ))}
       </div>
 
-      {/* Category Manager Dialog */}
-      <Dialog open={isCategoryModalOpen} onOpenChange={(open) => {
-        setIsCategoryModalOpen(open);
-        if (!open) { setEditingIndex(null); setEditValue(''); }
-      }}>
-        <DialogContent className="sm:max-w-md glass border-white/10">
+      {/* Advanced Category Manager Dialog */}
+      <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+        <DialogContent className="sm:max-w-3xl glass border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                <Tag size={20} />
+                <Layout size={20} />
               </div>
-              <DialogTitle className="text-2xl font-headline font-bold">Blog Categories</DialogTitle>
+              <DialogTitle className="text-2xl font-headline font-bold">Category Architecture</DialogTitle>
             </div>
             <DialogDescription>
-              Add, edit, or remove categories to organize your career content.
+              Manage your blog taxonomies, SEO slugs, and descriptions.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            <div className="flex gap-2">
-              <Input 
-                value={newCategoryName} 
-                onChange={(e) => setNewCategoryName(e.target.value)} 
-                placeholder="New category name..."
-                className="h-11"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                disabled={savingCategories}
-              />
-              <Button onClick={handleAddCategory} disabled={savingCategories || !newCategoryName.trim()} className="font-bold h-11 shrink-0">
-                {savingCategories && editingIndex === null ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 py-4">
+            {/* List Column */}
+            <div className="md:col-span-5 space-y-4 border-r border-white/5 pr-4">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start font-bold h-11 mb-2 border-dashed"
+                onClick={() => setEditingCategory({ name: '', slug: '', description: '', status: 'active' })}
+              >
+                <Plus size={16} className="mr-2" /> Create New
               </Button>
+              
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                {categoriesLoading ? (
+                  <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+                ) : !categories || categories.length === 0 ? (
+                  <p className="text-center text-xs text-muted-foreground italic py-8">No categories found.</p>
+                ) : (
+                  categories.map((cat: any) => (
+                    <div 
+                      key={cat.id} 
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer group",
+                        editingCategory?.id === cat.id ? "bg-primary/10 border-primary/30" : "bg-muted/20 border-white/5 hover:bg-muted/30"
+                      )}
+                      onClick={() => setEditingCategory(cat)}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold truncate">{cat.name}</p>
+                        <p className="text-[9px] text-muted-foreground font-mono truncate">/{cat.slug}</p>
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100" 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-              {settingsLoading ? (
-                <div className="flex justify-center p-4"><Loader2 className="animate-spin text-primary" /></div>
-              ) : !blogSettings?.categories || blogSettings.categories.length === 0 ? (
-                <p className="text-center text-xs text-muted-foreground italic py-8">No categories found.</p>
-              ) : (
-                blogSettings.categories.map((cat: string, idx: number) => (
-                  <div key={cat} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-white/5 group transition-all hover:bg-muted/30">
-                    {editingIndex === idx ? (
-                      <div className="flex gap-2 flex-1 mr-2">
+            {/* Editor Column */}
+            <div className="md:col-span-7">
+              {editingCategory ? (
+                <form onSubmit={handleSaveCategory} className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Category Name</Label>
                         <Input 
-                          value={editValue} 
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="h-8 text-sm"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleUpdateCategory(idx);
-                            if (e.key === 'Escape') setEditingIndex(null);
-                          }}
+                          value={editingCategory.name} 
+                          onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} 
+                          placeholder="e.g. Resume Tips"
+                          className="h-10"
                         />
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" onClick={() => handleUpdateCategory(idx)}>
-                          <Check size={14} />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingIndex(null)}>
-                          <X size={14} />
-                        </Button>
                       </div>
-                    ) : (
-                      <>
-                        <span className="text-sm font-bold truncate flex-1">{cat}</span>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-primary" 
-                            onClick={() => { setEditingIndex(idx); setEditValue(cat); }}
-                            disabled={savingCategories}
-                          >
-                            <Edit3 size={14} />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10" 
-                            onClick={() => handleDeleteCategory(cat)}
-                            disabled={savingCategories}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">URL Handle (Slug)</Label>
+                        <Input 
+                          value={editingCategory.slug} 
+                          onChange={(e) => setEditingCategory({ ...editingCategory, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} 
+                          placeholder="resume-tips"
+                          className="h-10 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Description</Label>
+                      <Textarea 
+                        value={editingCategory.description || ''} 
+                        onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })} 
+                        placeholder="Brief overview of this category..."
+                        className="h-24 text-sm"
+                      />
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-4">
+                       <div className="flex items-center gap-2 mb-2">
+                         <Globe size={14} className="text-primary" />
+                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">SEO Configuration</span>
+                       </div>
+                       <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-[9px] font-bold text-muted-foreground">Meta Title</Label>
+                            <Input 
+                              value={editingCategory.seo?.title || ''} 
+                              onChange={(e) => setEditingCategory({ ...editingCategory, seo: { ...editingCategory.seo, title: e.target.value } })}
+                              className="h-8 text-xs bg-background/50" 
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[9px] font-bold text-muted-foreground">Meta Description</Label>
+                            <Textarea 
+                              value={editingCategory.seo?.description || ''} 
+                              onChange={(e) => setEditingCategory({ ...editingCategory, seo: { ...editingCategory.seo, description: e.target.value } })}
+                              className="h-16 text-xs bg-background/50" 
+                            />
+                          </div>
+                       </div>
+                    </div>
                   </div>
-                ))
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setEditingCategory(null)}>Cancel</Button>
+                    <Button type="submit" size="sm" disabled={catSaving} className="font-bold">
+                      {catSaving ? <Loader2 className="animate-spin mr-2" size={14} /> : <Check size={14} className="mr-2" />}
+                      Save Configuration
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-12 space-y-4 border-2 border-dashed rounded-2xl opacity-40">
+                  <Settings2 size={48} />
+                  <p className="text-sm font-medium">Select a category or create one to edit settings.</p>
+                </div>
               )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t pt-4">
             <Button variant="ghost" className="w-full font-bold" onClick={() => setIsCategoryModalOpen(false)}>Close Manager</Button>
           </DialogFooter>
         </DialogContent>
