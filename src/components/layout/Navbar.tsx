@@ -33,7 +33,7 @@ import { doc, collection, query } from 'firebase/firestore';
 /**
  * @fileOverview High-Performance Dynamic Navigation.
  * Fetches and renders nested CMS menus with recursive hierarchy.
- * Optimized with composite keys to prevent React reconciliation warnings.
+ * Optimized with composite keys for React stability.
  */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
@@ -62,7 +62,7 @@ export function Navbar() {
 
   /**
    * Transforms flat Firestore array with levels into a recursive tree using a stack.
-   * Supports unlimited hierarchy levels (UI capped at 3 tiers).
+   * Produces the exact same UI structure as the original static menu.
    */
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
@@ -73,7 +73,6 @@ export function Navbar() {
     activeHeaderMenu.items.forEach((item: any) => {
       const node = { ...item, children: [] };
       
-      // While the stack has items at a deeper or same level, pop them
       while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
         stack.pop();
       }
@@ -111,59 +110,53 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Navigation Engine */}
+        {/* Dynamic Desktop Navigation - Original Design */}
         <nav className="hidden lg:flex items-center gap-8">
-          {processedMenuItems.length === 0 ? (
-            <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
-               System Ready...
-            </div>
-          ) : (
-            processedMenuItems.map((item, idx) => (
-              item.children && item.children.length > 0 ? (
-                <DropdownMenu key={`${item.id}-${idx}`}>
-                  <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
-                    {item.label} <ChevronDown size={14} />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
-                    {item.children.map((child: any, cIdx: number) => (
-                      child.children && child.children.length > 0 ? (
-                        <DropdownMenuSub key={`${child.id}-${cIdx}`}>
-                          <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="w-56 p-2">
-                             {child.children.map((sub: any, sIdx: number) => (
-                               <DropdownMenuItem key={`${sub.id}-${sIdx}`} asChild className="p-3 cursor-pointer">
-                                  <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
-                                    {sub.label}
-                                    {sub.target === '_blank' && <ExternalLink size={10} />}
-                                  </Link>
-                               </DropdownMenuItem>
-                             ))}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                      ) : (
-                        <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
-                          <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
-                            {child.label}
-                            {child.target === '_blank' && <ExternalLink size={10} />}
-                          </Link>
-                        </DropdownMenuItem>
-                      )
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Link 
-                  key={`${item.id}-${idx}`} 
-                  href={item.href} 
-                  target={item.target || '_self'}
-                  className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground flex items-center gap-1"
-                >
-                  {item.label}
-                  {item.target === '_blank' && <ExternalLink size={10} />}
-                </Link>
-              )
-            ))
-          )}
+          {processedMenuItems.map((item, idx) => (
+            item.children && item.children.length > 0 ? (
+              <DropdownMenu key={`${item.id}-${idx}`}>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
+                  {item.label} <ChevronDown size={14} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
+                  {item.children.map((child: any, cIdx: number) => (
+                    child.children && child.children.length > 0 ? (
+                      <DropdownMenuSub key={`${child.id}-${cIdx}`}>
+                        <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="w-56 p-2">
+                           {child.children.map((sub: any, sIdx: number) => (
+                             <DropdownMenuItem key={`${sub.id}-${sIdx}`} asChild className="p-3 cursor-pointer">
+                                <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                                  {sub.label}
+                                  {sub.target === '_blank' && <ExternalLink size={10} />}
+                                </Link>
+                             </DropdownMenuItem>
+                           ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    ) : (
+                      <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
+                        <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                          {child.label}
+                          {child.target === '_blank' && <ExternalLink size={10} />}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link 
+                key={`${item.id}-${idx}`} 
+                href={item.href} 
+                target={item.target || '_self'}
+                className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground flex items-center gap-1"
+              >
+                {item.label}
+                {item.target === '_blank' && <ExternalLink size={10} />}
+              </Link>
+            )
+          ))}
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4">

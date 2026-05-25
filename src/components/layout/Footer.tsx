@@ -8,7 +8,7 @@ import { doc, collection, query } from 'firebase/firestore';
 
 /**
  * @fileOverview Dynamic Global Footer.
- * Maps hierarchical CMS-driven menu items into structural layout columns.
+ * Maps hierarchical CMS menu items into original column-based structure.
  */
 export function Footer() {
   const db = useFirestore();
@@ -25,7 +25,7 @@ export function Footer() {
   }, [menus, navSettings]);
 
   /**
-   * Process Footer Architecture:
+   * Process Footer Logic:
    * Level 0 nodes = Column Headers
    * Level 1+ nodes = Child links within those columns
    */
@@ -57,6 +57,7 @@ export function Footer() {
     <footer className="bg-background border-t py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {/* Column 1: Original Brand Identity */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-primary-foreground shadow-lg">
@@ -81,12 +82,13 @@ export function Footer() {
             </div>
           </div>
 
+          {/* Dynamic Columns: Original Tools, Company, Legal */}
           {footerColumns.map((col: any, idx: number) => (
-            <div key={idx}>
+            <div key={`${col.title}-${idx}`}>
               <h4 className="font-headline font-bold mb-6 uppercase text-xs tracking-widest text-primary">{col.title}</h4>
               <ul className="space-y-4">
                 {col.links.map((link: any, lIdx: number) => (
-                  <li key={lIdx}>
+                  <li key={`${link.label}-${lIdx}`}>
                     <Link 
                       href={link.href} 
                       target={link.target || '_self'}
@@ -101,6 +103,7 @@ export function Footer() {
             </div>
           ))}
         </div>
+        
         <div className="mt-16 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} ATS Resume Scan. All rights reserved.
