@@ -21,7 +21,11 @@ import {
   Menu,
   Wand2,
   Settings2,
-  ExternalLink
+  ExternalLink,
+  Edit3,
+  Tag,
+  Check,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -85,27 +89,35 @@ export default function MenuManagement() {
         { 
           name: 'Header Menu', 
           items: [
-            { id: 'def-h1', label: 'AI Tools', href: '#', level: 0 },
-            { id: 'def-h1-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
-            { id: 'def-h1-2', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
-            { id: 'def-h1-3', label: 'Job Matcher', href: '/job-description-matcher', level: 1 },
-            { id: 'def-h2', label: 'Templates', href: '/templates', level: 0 },
-            { id: 'def-h3', label: 'Blog', href: '/blog', level: 0 },
-            { id: 'def-h4', label: 'About', href: '/about', level: 0 }
+            { id: 'h-tools-root', label: 'Tools', href: '#', level: 0 },
+            { id: 'h-tool-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
+            { id: 'h-tool-2', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
+            { id: 'h-tool-3', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
+            { id: 'h-tool-4', label: 'AI Resume Optimizer', href: '/resume-optimizer', level: 1 },
+            { id: 'h-tool-5', label: 'LinkedIn Audit', href: '/linkedin-profile-optimizer', level: 1 },
+            { id: 'h-tool-6', label: 'LinkedIn Summary', href: '/linkedin-summary-generator', level: 1 },
+            { id: 'h-tool-7', label: 'Job Matcher', href: '/job-description-matcher', level: 1 },
+            { id: 'h-tool-8', label: 'Interview Prep', href: '/interview-prep', level: 1 },
+            { id: 'h-templates', label: 'Templates', href: '/templates', level: 0 },
+            { id: 'h-blog', label: 'Blog', href: '/blog', level: 0 },
+            { id: 'h-about', label: 'About', href: '/about', level: 0 }
           ]
         },
         { 
           name: 'Footer Menu', 
           items: [
-            { id: 'def-f1', label: 'Tools', href: '#', level: 0 },
-            { id: 'def-f1-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
-            { id: 'def-f1-2', label: 'CV Builder', href: '/cv-builder', level: 1 },
-            { id: 'def-f2', label: 'Company', href: '#', level: 0 },
-            { id: 'def-f2-1', label: 'About Us', href: '/about', level: 1 },
-            { id: 'def-f2-2', label: 'Blog', href: '/blog', level: 1 },
-            { id: 'def-f3', label: 'Legal', href: '#', level: 0 },
-            { id: 'def-f3-1', label: 'Privacy Policy', href: '/privacy', level: 1 },
-            { id: 'def-f3-2', label: 'Terms', href: '/terms', level: 1 }
+            { id: 'f-tools-col', label: 'Tools', href: '#', level: 0 },
+            { id: 'f-tool-1', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
+            { id: 'f-tool-2', label: 'CV Builder', href: '/cv-builder', level: 1 },
+            { id: 'f-tool-3', label: 'Resume Optimizer', href: '/resume-optimizer', level: 1 },
+            { id: 'f-company-col', label: 'Company', href: '#', level: 0 },
+            { id: 'f-about', label: 'About Us', href: '/about', level: 1 },
+            { id: 'f-blog', label: 'Blog', href: '/blog', level: 1 },
+            { id: 'f-contact', label: 'Contact', href: '/contact', level: 1 },
+            { id: 'f-legal-col', label: 'Legal', href: '#', level: 0 },
+            { id: 'f-privacy', label: 'Privacy Policy', href: '/privacy', level: 1 },
+            { id: 'f-terms', label: 'Terms', href: '/terms', level: 1 },
+            { id: 'f-disclaimer', label: 'Disclaimer', href: '/disclaimer', level: 1 }
           ]
         }
       ];
