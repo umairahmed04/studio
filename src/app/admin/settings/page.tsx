@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useDoc } from '@/firebase';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { 
   Loader2, 
   Save, 
@@ -21,13 +21,18 @@ import {
   Download,
   Database,
   History,
-  FileCode
+  FileCode,
+  Upload,
+  AlertCircle,
+  CheckCircle2,
+  Settings
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminSettings() {
   const db = useFirestore();
@@ -46,6 +51,8 @@ export default function AdminSettings() {
   const [blogForm, setBlogForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (settings) {
@@ -141,6 +148,7 @@ export default function AdminSettings() {
   /**
    * DATABASE EXPORT ENGINE
    * Satisfies the requirement for a complete database backup/download.
+   * Enhanced to include sub-collections (Page Sections).
    */
   const handleExportDatabase = async () => {
     if (!db) return;
@@ -152,37 +160,97 @@ export default function AdminSettings() {
         'blog_categories', 
         'menus', 
         'users', 
-        'settings'
+        'settings',
+        'usernames'
       ];
       
       const fullBackup: any = {};
 
       for (const colName of collectionsToExport) {
         const querySnapshot = await getDocs(collection(db, colName));
-        fullBackup[colName] = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const docs = [];
+        
+        for (const d of querySnapshot.docs) {
+          const docData: any = {
+            id: d.id,
+            ...d.data()
+          };
+
+          // Special handling for Page Sections (Sub-collections)
+          if (colName === 'pages') {
+            const sectionsSnap = await getDocs(collection(db, 'pages', d.id, 'sections'));
+            docData._sections = sectionsSnap.docs.map(s => ({
+              id: s.id,
+              ...s.data()
+            }));
+          }
+
+          docs.push(docData);
+        }
+        fullBackup[colName] = docs;
       }
 
-      // Create a downloadable JSON blob
       const jsonStr = JSON.stringify(fullBackup, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `ATSResumeScan_Database_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `ATSResumeScan_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      toast({ title: "Backup Successful", description: "JSON export downloaded to your device." });
+      toast({ title: "Backup Successful", description: "Complete database JSON downloaded." });
     } catch (error) {
       console.error("Export Error:", error);
-      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate database JSON." });
+      toast({ variant: "destructive", title: "Export Failed" });
     } finally {
       setExporting(false);
+    }
+  };
+
+  /**
+   * DATABASE IMPORT ENGINE
+   * Restores a site from a JSON backup file.
+   */
+  const handleImportDatabase = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !db) return;
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      for (const [colName, docs] of Object.entries(data)) {
+        if (!Array.isArray(docs)) continue;
+
+        for (const docObj of docs as any[]) {
+          const { id, _sections, ...docData } = docObj;
+          const docRef = doc(db, colName, id);
+          
+          // Use setDoc for the main document
+          await setDoc(docRef, { ...docData, updatedAt: serverTimestamp() }, { merge: true });
+
+          // Restore Sections for Pages
+          if (colName === 'pages' && _sections) {
+            for (const section of _sections) {
+              const { id: sId, ...sData } = section;
+              await setDoc(doc(db, 'pages', id, 'sections', sId), sData, { merge: true });
+            }
+          }
+        }
+      }
+
+      toast({ title: "Import Successful", description: "Database has been populated from backup." });
+      window.location.reload(); // Refresh to sync UI
+    } catch (error) {
+      console.error("Import Error:", error);
+      toast({ variant: "destructive", title: "Import Failed", description: "Ensure the file format is a valid ATS backup JSON." });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -197,10 +265,23 @@ export default function AdminSettings() {
           <h1 className="text-3xl font-headline font-bold">Platform CMS</h1>
           <p className="text-muted-foreground">Manage global settings and dynamic content taxonomies.</p>
         </div>
-        <Button variant="outline" className="border-primary/20 text-primary font-bold" onClick={handleExportDatabase} disabled={exporting}>
-          {exporting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Download size={16} className="mr-2" />}
-          Export Database Backup
-        </Button>
+        <div className="flex gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImportDatabase} 
+            className="hidden" 
+            accept=".json"
+          />
+          <Button variant="outline" className="border-primary/20 text-primary font-bold" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="animate-spin mr-2" size={16} /> : <Upload size={16} className="mr-2" />}
+            Import Data
+          </Button>
+          <Button variant="outline" className="border-primary/20 text-primary font-bold" onClick={handleExportDatabase} disabled={exporting}>
+            {exporting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Download size={16} className="mr-2" />}
+            Generate Backup
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="nav" className="w-full">
@@ -334,6 +415,15 @@ export default function AdminSettings() {
                 </CardDescription>
              </CardHeader>
              <CardContent className="space-y-6">
+                <Alert className="bg-primary/10 border-primary/20">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <AlertTitle className="font-bold">Scala Hosting Migration Hint</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Since your app is now hosted on Scala Hosting, use this tool to sync your cloud data across environments. 
+                    This export includes all Page Sections, Menus, and dynamic configurations.
+                  </AlertDescription>
+                </Alert>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                    <div className="p-4 rounded-xl bg-background border flex items-center gap-3">
                       <FileCode className="text-blue-500" />
@@ -366,10 +456,16 @@ export default function AdminSettings() {
                          Exports all Firestore collections as a single high-fidelity JSON file. Use this for migrations, offline backups, or data audit purposes.
                       </p>
                    </div>
-                   <Button size="lg" className="px-12 font-bold shadow-lg shadow-primary/20" onClick={handleExportDatabase} disabled={exporting}>
-                      {exporting ? <Loader2 className="animate-spin mr-2" /> : <Download className="mr-2" />}
-                      Generate Production Backup
-                   </Button>
+                   <div className="flex justify-center gap-4">
+                     <Button size="lg" variant="outline" className="px-8 font-bold" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                        {importing ? <Loader2 className="animate-spin mr-2" /> : <Upload className="mr-2" />}
+                        Restore from File
+                     </Button>
+                     <Button size="lg" className="px-12 font-bold shadow-lg shadow-primary/20" onClick={handleExportDatabase} disabled={exporting}>
+                        {exporting ? <Loader2 className="animate-spin mr-2" /> : <Download className="mr-2" />}
+                        Download JSON Backup
+                     </Button>
+                   </div>
                 </div>
              </CardContent>
           </Card>
@@ -385,7 +481,7 @@ export default function AdminSettings() {
               <div className="flex items-center gap-3">
                 <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Enable Ads</span>
                 <Switch 
-                  checked={formData.adsense.enabled}
+                  checked={formData?.adsense?.enabled}
                   onCheckedChange={(checked) => setFormData({...formData, adsense: {...formData.adsense, enabled: checked}})}
                 />
                 <Button onClick={handleSaveSettings} disabled={saving} className="ml-4"><Save size={16} /></Button>
@@ -395,7 +491,7 @@ export default function AdminSettings() {
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase text-muted-foreground">Publisher ID</label>
                 <Input 
-                  value={formData.adsense.client} 
+                  value={formData?.adsense?.client || ''} 
                   onChange={(e) => setFormData({...formData, adsense: {...formData.adsense, client: e.target.value}})}
                   placeholder="ca-pub-XXXXXXXXXXXXXXXX"
                 />
@@ -414,7 +510,7 @@ export default function AdminSettings() {
               <Button onClick={handleSaveSettings} disabled={saving}><Save size={16} /></Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {Object.entries(formData.tools).map(([key, val]: [string, any]) => (
+              {formData?.tools && Object.entries(formData.tools).map(([key, val]: [string, any]) => (
                 <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-white/5">
                   <span className="font-bold capitalize">{key.replace('Enabled', '').replace(/([A-Z])/g, ' $1')}</span>
                   <Switch checked={val} onCheckedChange={(v) => setFormData({...formData, tools: {...formData.tools, [key]: v}})} />
