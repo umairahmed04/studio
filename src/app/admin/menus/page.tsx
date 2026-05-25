@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { collection, query, orderBy, doc, setDoc, serverTimestamp, deleteDoc, addDoc } from 'firebase/firestore';
 import { 
   Plus, 
@@ -55,6 +55,7 @@ interface MenuItem {
  */
 export default function MenuManagement() {
   const db = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const [activeMenuId, setActiveMenuId] = useState<string>('');
@@ -102,8 +103,6 @@ export default function MenuManagement() {
             { id: 'h-cvb', label: 'Interactive Builder', href: '/cv-builder', level: 1, iconName: 'Layout', description: 'Recruiter-ready CVs' },
             { id: 'h-cvc', label: 'Compare & Match', href: '/cv-compare', level: 1, iconName: 'ArrowLeftRight', description: 'Side-by-side analysis' },
             { id: 'h-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1, iconName: 'Wand2', description: 'Auto-rewrite bullets' },
-            { id: 'h-lpa', label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', level: 1, iconName: 'ShieldCheck', description: 'Social presence scan' },
-            { id: 'h-jdm', label: 'Job Matcher', href: '/job-description-matcher', level: 1, iconName: 'Target', description: 'JD keyword analysis' },
             { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: true },
             { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: true },
             { id: 'h-tpl', label: 'Templates', href: '/templates', level: 0 },
@@ -558,7 +557,7 @@ export default function MenuManagement() {
                                   <Input 
                                     value={item.iconName || ''} 
                                     onChange={(e) => updateItemField(item.id, 'iconName', e.target.value)}
-                                    placeholder="Search, Wand2, etc." 
+                                    placeholder="Search, Layout, etc." 
                                     className="h-8 text-xs font-mono" 
                                   />
                                </div>

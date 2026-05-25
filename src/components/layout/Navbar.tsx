@@ -22,7 +22,8 @@ import {
   Target,
   Linkedin,
   HelpCircle,
-  FileText
+  FileText,
+  ShieldAlert
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -52,8 +53,25 @@ const ICON_MAP: Record<string, any> = {
   Target,
   Linkedin,
   HelpCircle,
-  FileText
+  FileText,
+  ShieldCheck,
+  ShieldAlert
 };
+
+/**
+ * Gets specific background and text colors for tools to match the reference image.
+ */
+const getIconStyle = (iconName: string) => {
+  switch(iconName) {
+    case 'Search': return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+    case 'Layout': return 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400';
+    case 'ArrowLeftRight': return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
+    case 'Wand2': return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+    case 'Mic': return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+    case 'Share2': return 'bg-slate-50 text-slate-600 dark:bg-slate-800/20 dark:text-slate-400';
+    default: return 'bg-primary/5 text-primary';
+  }
+}
 
 /**
  * @fileOverview High-Performance Dynamic Navigation.
@@ -140,26 +158,45 @@ export function Navbar() {
                 <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest text-muted-foreground outline-none">
                   {item.label} <ChevronDown size={14} />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[600px] p-6 mt-2 grid grid-cols-2 gap-6 glass border-white/10" align="start">
-                  {item.children.map((child: any, cIdx: number) => {
-                    const Icon = ICON_MAP[child.iconName] || HelpCircle;
-                    return (
-                      <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent cursor-pointer group/item">
-                        <Link href={child.href} target={child.target || '_self'} className="flex items-start gap-4 p-3 rounded-2xl transition-all hover:bg-primary/5 border border-transparent hover:border-primary/10">
-                          <div className="w-12 h-12 rounded-xl bg-muted/50 group-hover/item:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover/item:text-primary transition-colors shadow-inner shrink-0">
-                            <Icon size={24} />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-foreground uppercase tracking-tight">{child.label}</span>
-                              {child.isPremium && <Badge className="bg-amber-500 text-[8px] h-3 px-1 uppercase font-black">PREMIUM</Badge>}
-                            </div>
-                            {child.description && <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-1">{child.description}</p>}
-                          </div>
-                        </Link>
-                      </DropdownMenuItem>
-                    );
-                  })}
+                <DropdownMenuContent className="w-[640px] p-8 mt-2 glass border-white/10" align="start">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                    {item.children.map((child: any, cIdx: number) => {
+                      const Icon = ICON_MAP[child.iconName] || HelpCircle;
+                      // Add a separator before the 5th item to match reference image (AI Interview Prep row)
+                      const showSeparator = cIdx === 4;
+                      
+                      return (
+                        <React.Fragment key={`${child.id}-${cIdx}`}>
+                          {showSeparator && <div className="col-span-2 border-t border-white/5 my-2" />}
+                          <DropdownMenuItem asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent cursor-pointer group/item">
+                            <Link href={child.href} target={child.target || '_self'} className="flex items-center gap-5">
+                              <div className={cn(
+                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-inner shrink-0",
+                                getIconStyle(child.iconName)
+                              )}>
+                                <Icon size={26} strokeWidth={2} />
+                              </div>
+                              <div className="space-y-1 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-[15px] text-foreground tracking-tight leading-tight">{child.label}</span>
+                                  {child.isPremium && (
+                                    <Badge className="bg-amber-500 text-[8px] h-3.5 px-1.5 uppercase font-black border-none text-white rounded-md shadow-sm">
+                                      PREMIUM
+                                    </Badge>
+                                  )}
+                                </div>
+                                {child.description && (
+                                  <p className="text-[11px] text-muted-foreground font-medium leading-tight opacity-70">
+                                    {child.description}
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : item.children && item.children.length > 0 ? (
