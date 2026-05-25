@@ -80,7 +80,12 @@ export default function AdminSettings() {
     } else if (!settingsLoading) {
       setFormData({
         adsense: { enabled: false, client: '', slots: { header: '', sidebar: '', footer: '', inContent: '' } },
-        seo: { siteName: 'ATSResumeScan', defaultTitle: '', defaultDescription: '', ogImage: '' },
+        seo: { 
+          siteName: 'ATSResumeScan', 
+          defaultTitle: 'ATSResumeScan | Free AI ATS Resume Checker & CV Optimizer', 
+          defaultDescription: 'Instantly check your ATS resume score, optimize with AI, and beat recruitment bots. Use our professional AI resume checker and CV optimizer to rank in the top 1% of applicants. Free, fast, and recruiter-approved.', 
+          ogImage: 'https://atsresumescan.com/og-image.jpg' 
+        },
         tools: { atsCheckerEnabled: true, resumeOptimizerEnabled: true, coverLetterEnabled: true }
       });
     }
