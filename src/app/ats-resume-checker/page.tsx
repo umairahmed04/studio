@@ -54,11 +54,16 @@ export default function ATSResumeChecker() {
     if (!resumeText.trim()) return;
     setLoading(true);
     try {
-      const output = await atsCompatibilityAnalysis({ 
+      const response = await atsCompatibilityAnalysis({ 
         resumeContent: resumeText,
         mode: 'same_industry' 
       });
       
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      const output = response.data!;
       setResult(output);
 
       // System Upgrade: Sync to Session & Firestore

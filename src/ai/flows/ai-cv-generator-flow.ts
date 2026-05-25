@@ -2,7 +2,6 @@
 /**
  * @fileOverview AI CV Generator Flow.
  * Generates high-impact, ATS-optimized professional CV content.
- * Adapts tone and achievement density based on experience level.
  */
 
 import {ai} from '@/ai/genkit';
@@ -54,10 +53,6 @@ const AiCvGeneratorOutputSchema = z.object({
 });
 export type AiCvGeneratorOutput = z.infer<typeof AiCvGeneratorOutputSchema>;
 
-export async function generateAiCv(input: AiCvGeneratorInput): Promise<AiCvGeneratorOutput> {
-  return aiCvGeneratorFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'aiCvGeneratorPrompt',
   input: {schema: AiCvGeneratorInputSchema},
@@ -75,14 +70,9 @@ CONTEXT:
 CORE RULES:
 1. ATS OPTIMIZATION: Use high-frequency industry keywords found in top job descriptions for this role.
 2. ACHIEVEMENT-ORIENTED: Every experience bullet point must follow the Google "X-Y-Z" formula (Accomplished [X] as measured by [Y], by doing [Z]).
-3. SENIORITY ADAPTATION:
-   - If < 2 years: Focus on education, internships, projects, and potential.
-   - If 2-8 years: Focus on professional growth, specific technical impact, and team collaboration.
-   - If 8+ years: Focus on leadership, ROI, cost-savings, strategic vision, and mentorship.
-4. SUMMARY: Write a high-impact, 3-4 sentence elevator pitch. Use "results-driven", "strategic", etc.
-5. EXPERIENCE: Generate 3 realistic professional entries. Use placeholder names like "Tech Global Solutions", "Retail Prime Corp", etc., but make the impact data feel authentic.
-6. SKILLS: Provide 10 technical skills, 5 soft skills, and 5 industry tools.
-7. CERTIFICATIONS: Suggest 3 industry-standard certifications or major achievements relevant to the role.
+3. SUMMARY: Write a high-impact, 3-4 sentence elevator pitch. Use "results-driven", "strategic", etc.
+4. EXPERIENCE: Generate 3 realistic professional entries.
+5. SKILLS: Provide 10 technical skills, 5 soft skills, and 5 industry tools.
 
 Return a structured JSON matching the output schema.`,
 });
@@ -98,7 +88,6 @@ const aiCvGeneratorFlow = ai.defineFlow(
       const {output} = await prompt(input);
       if (!output) throw new Error('AI CV engine failed to generate content.');
       
-      // Ensure specific fields requested by user are preserved
       output.personalInfo.fullName = input.fullName;
       output.personalInfo.email = input.email;
       output.personalInfo.phone = input.phone;
@@ -111,3 +100,16 @@ const aiCvGeneratorFlow = ai.defineFlow(
     }
   }
 );
+
+/**
+ * PRODUCTION WRAPPER: Returns safe result object for Next.js 15 compatibility.
+ */
+export async function generateAiCv(input: AiCvGeneratorInput) {
+  try {
+    const data = await aiCvGeneratorFlow(input);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("AI Gen Error:", error);
+    return { success: false, error: error.message || "CV Generator encountered a server-side error." };
+  }
+}

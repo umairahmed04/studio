@@ -123,15 +123,19 @@ export default function CVBuilderDashboard() {
     setAiLoading(true);
     try {
       toast({ title: "AI Writer Active", description: "Crafting your professional history..." });
-      const result = await generateAiCv({
+      const response = await generateAiCv({
         ...aiForm,
         yearsOfExperience: parseInt(aiForm.yearsOfExperience) || 0
       });
       
-      await handleCreateNew('professional', result);
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      await handleCreateNew('professional', response.data);
       setIsAiModalOpen(false);
     } catch (error: any) {
-      toast({ variant: "destructive", title: "AI Generation Failed", description: error.message });
+      toast({ variant: "destructive", title: "AI Generation Failed", description: error.message || "Check your internet connection and try again." });
     } finally {
       setAiLoading(false);
     }

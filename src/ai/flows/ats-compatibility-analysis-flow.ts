@@ -81,6 +81,15 @@ const atsCompatibilityAnalysisFlow = ai.defineFlow(
   }
 );
 
-export async function atsCompatibilityAnalysis(input: AtsCompatibilityAnalysisInput): Promise<AtsCompatibilityAnalysisOutput> {
-  return atsCompatibilityAnalysisFlow(input);
+/**
+ * PRODUCTION WRAPPER: Avoids Next.js 15 Server Components render error by returning a safe object.
+ */
+export async function atsCompatibilityAnalysis(input: AtsCompatibilityAnalysisInput) {
+  try {
+    const data = await atsCompatibilityAnalysisFlow(input);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Production Server Action Error:", error);
+    return { success: false, error: error.message || "Internal AI Server Error" };
+  }
 }

@@ -50,10 +50,16 @@ export default function ResumeOptimizer() {
     if (!resumeContent.trim()) return;
     setLoading(true);
     try {
-      const output = await optimizeResume({ 
+      const response = await optimizeResume({ 
         resumeContent,
         jobDescription: jobDescription.trim() || undefined
       });
+      
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      const output = response.data!;
       setResult(output);
 
       // System Upgrade: Auto-save back to Firestore if cvId exists
@@ -74,12 +80,12 @@ export default function ResumeOptimizer() {
           }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Optimization failed",
-        description: "An error occurred while optimizing your resume. Please try again."
+        description: error.message || "An error occurred while optimizing your resume. Please try again."
       });
     } finally {
       setLoading(false);
@@ -201,7 +207,7 @@ export default function ResumeOptimizer() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="absolute top-2 right-2 h-6 w-6 rounded-full bg-background/80"
+                    className="absolute top-2 right-2 h-6 h-6 rounded-full bg-background/80"
                     onClick={() => {
                         setResumeContent('');
                         if(typeof window !== 'undefined') sessionStorage.removeItem('last_extracted_cv');
