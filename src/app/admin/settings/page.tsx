@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useDoc } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { 
   Loader2, 
   Save, 
@@ -17,7 +17,11 @@ import {
   Trash2, 
   GripVertical, 
   FileText,
-  Tag
+  Tag,
+  Download,
+  Database,
+  History,
+  FileCode
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +45,7 @@ export default function AdminSettings() {
   const [navForm, setNavForm] = useState<any>(null);
   const [blogForm, setBlogForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -133,30 +138,83 @@ export default function AdminSettings() {
     }
   };
 
+  /**
+   * DATABASE EXPORT ENGINE
+   * Satisfies the requirement for a complete database backup/download.
+   */
+  const handleExportDatabase = async () => {
+    if (!db) return;
+    setExporting(true);
+    try {
+      const collectionsToExport = [
+        'pages', 
+        'blog_posts', 
+        'blog_categories', 
+        'menus', 
+        'users', 
+        'settings'
+      ];
+      
+      const fullBackup: any = {};
+
+      for (const colName of collectionsToExport) {
+        const querySnapshot = await getDocs(collection(db, colName));
+        fullBackup[colName] = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      }
+
+      // Create a downloadable JSON blob
+      const jsonStr = JSON.stringify(fullBackup, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ATSResumeScan_Database_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({ title: "Backup Successful", description: "JSON export downloaded to your device." });
+    } catch (error) {
+      console.error("Export Error:", error);
+      toast({ variant: "destructive", title: "Export Failed", description: "Could not generate database JSON." });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (settingsLoading || navLoading || blogLoading || !formData || !navForm || !blogForm) {
     return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-headline font-bold">Platform CMS</h1>
           <p className="text-muted-foreground">Manage global settings and dynamic content taxonomies.</p>
         </div>
+        <Button variant="outline" className="border-primary/20 text-primary font-bold" onClick={handleExportDatabase} disabled={exporting}>
+          {exporting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Download size={16} className="mr-2" />}
+          Export Database Backup
+        </Button>
       </div>
 
       <Tabs defaultValue="nav" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-12">
+        <TabsList className="grid w-full grid-cols-6 h-12">
           <TabsTrigger value="nav"><List size={16} className="mr-2" /> Navigation</TabsTrigger>
           <TabsTrigger value="blog"><FileText size={16} className="mr-2" /> Blog Settings</TabsTrigger>
           <TabsTrigger value="seo"><Globe size={16} className="mr-2" /> Global SEO</TabsTrigger>
           <TabsTrigger value="ads"><Megaphone size={16} className="mr-2" /> AdSense</TabsTrigger>
           <TabsTrigger value="tools"><ShieldCheck size={16} className="mr-2" /> AI Tools</TabsTrigger>
+          <TabsTrigger value="backup"><Database size={16} className="mr-2" /> System Export</TabsTrigger>
         </TabsList>
 
         <TabsContent value="nav" className="pt-6 space-y-6">
-          <Card className="border-white/5">
+          <Card className="border-white/5 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Main Menu</CardTitle>
@@ -189,65 +247,10 @@ export default function AdminSettings() {
                }}><Plus size={16} className="mr-2" /> Add Menu Item</Button>
             </CardContent>
           </Card>
-
-          <Card className="border-white/5">
-            <CardHeader><CardTitle>Footer Structure</CardTitle></CardHeader>
-            <CardContent className="space-y-8">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 {navForm.footer.columns.map((col: any, cIdx: number) => (
-                   <div key={cIdx} className="space-y-4 p-4 border rounded-xl bg-card">
-                      <div className="flex justify-between items-center">
-                        <Input className="font-bold text-sm h-8" value={col.title} onChange={(e) => {
-                          const newFooter = {...navForm.footer};
-                          newFooter.columns[cIdx].title = e.target.value;
-                          setNavForm({...navForm, footer: newFooter});
-                        }} />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                          const newFooter = {...navForm.footer};
-                          newFooter.columns = newFooter.columns.filter((_: any, i: number) => i !== cIdx);
-                          setNavForm({...navForm, footer: newFooter});
-                        }}><Trash2 size={14} /></Button>
-                      </div>
-                      <div className="space-y-2">
-                        {col.links.map((link: any, lIdx: number) => (
-                          <div key={lIdx} className="flex gap-2">
-                             <Input placeholder="Label" className="text-xs h-8" value={link.label} onChange={(e) => {
-                               const newFooter = {...navForm.footer};
-                               newFooter.columns[cIdx].links[lIdx].label = e.target.value;
-                               setNavForm({...navForm, footer: newFooter});
-                             }} />
-                             <Input placeholder="Href" className="text-xs h-8" value={link.href} onChange={(e) => {
-                               const newFooter = {...navForm.footer};
-                               newFooter.columns[cIdx].links[lIdx].href = e.target.value;
-                               setNavForm({...navForm, footer: newFooter});
-                             }} />
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                               const newFooter = {...navForm.footer};
-                               newFooter.columns[cIdx].links = newFooter.columns[cIdx].links.filter((_: any, i: number) => i !== lIdx);
-                               setNavForm({...navForm, footer: newFooter});
-                             }}><Trash2 size={12} /></Button>
-                          </div>
-                        ))}
-                        <Button variant="outline" size="sm" className="w-full text-[10px] h-7 border-dashed" onClick={() => {
-                          const newFooter = {...navForm.footer};
-                          newFooter.columns[cIdx].links.push({ label: '', href: '' });
-                          setNavForm({...navForm, footer: newFooter});
-                        }}>Add Link</Button>
-                      </div>
-                   </div>
-                 ))}
-                 <Button variant="outline" className="h-full border-dashed" onClick={() => {
-                   const newFooter = {...navForm.footer};
-                   newFooter.columns.push({ title: 'New Column', links: [] });
-                   setNavForm({...navForm, footer: newFooter});
-                 }}><Plus size={20} className="mb-2" /> Add Column</Button>
-               </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="blog" className="pt-6 space-y-6">
-          <Card className="border-white/5">
+          <Card className="border-white/5 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Blog Categories</CardTitle>
@@ -316,6 +319,59 @@ export default function AdminSettings() {
                 />
               </div>
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="backup" className="pt-6 space-y-6">
+          <Card className="border-primary/20 bg-primary/5 shadow-xl">
+             <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                   <Database className="text-primary" />
+                   Enterprise Data Export
+                </CardTitle>
+                <CardDescription>
+                   Generate a complete structural backup of your site's content and configurations.
+                </CardDescription>
+             </CardHeader>
+             <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="p-4 rounded-xl bg-background border flex items-center gap-3">
+                      <FileCode className="text-blue-500" />
+                      <div>
+                         <p className="text-xs font-black uppercase text-muted-foreground">Pages</p>
+                         <p className="text-lg font-bold">Structural</p>
+                      </div>
+                   </div>
+                   <div className="p-4 rounded-xl bg-background border flex items-center gap-3">
+                      <FileText className="text-purple-500" />
+                      <div>
+                         <p className="text-xs font-black uppercase text-muted-foreground">Content</p>
+                         <p className="text-lg font-bold">Blog Posts</p>
+                      </div>
+                   </div>
+                   <div className="p-4 rounded-xl bg-background border flex items-center gap-3">
+                      <Settings className="text-green-500" />
+                      <div>
+                         <p className="text-xs font-black uppercase text-muted-foreground">Config</p>
+                         <p className="text-lg font-bold">Menus/SEO</p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-muted/50 border border-dashed text-center space-y-4">
+                   <History className="mx-auto text-muted-foreground opacity-40" size={40} />
+                   <div className="space-y-1">
+                      <h4 className="font-bold">JSON Data Recovery Point</h4>
+                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                         Exports all Firestore collections as a single high-fidelity JSON file. Use this for migrations, offline backups, or data audit purposes.
+                      </p>
+                   </div>
+                   <Button size="lg" className="px-12 font-bold shadow-lg shadow-primary/20" onClick={handleExportDatabase} disabled={exporting}>
+                      {exporting ? <Loader2 className="animate-spin mr-2" /> : <Download className="mr-2" />}
+                      Generate Production Backup
+                   </Button>
+                </div>
+             </CardContent>
           </Card>
         </TabsContent>
 

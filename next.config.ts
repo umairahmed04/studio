@@ -8,11 +8,18 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Optimized for Scala Hosting / Standalone Node environment
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'atsresumescan.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'atsresumescan-v2.vercel.app',
         port: '',
         pathname: '/**',
       },

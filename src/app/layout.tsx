@@ -40,7 +40,7 @@ export default function RootLayout({
     "@type": "Organization",
     "name": "ATSResumeScan",
     "url": "https://atsresumescan.com",
-    "logo": "https://atsresumescan.com/logo.png",
+    "logo": "https://atsresumescan.com/icon.png",
     "description": "Professional AI-powered ATS resume checker and CV optimization platform.",
     "sameAs": [
       "https://twitter.com/atsresumescan",
