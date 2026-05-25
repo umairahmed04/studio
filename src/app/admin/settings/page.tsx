@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useDoc, useCollection, useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { 
   doc, 
   setDoc, 
@@ -15,7 +15,6 @@ import {
   orderBy, 
   limit, 
   addDoc,
-  collectionGroup,
   deleteDoc
 } from 'firebase/firestore';
 import { 
@@ -40,7 +39,8 @@ import {
   Settings,
   RefreshCw,
   Clock,
-  ShieldAlert
+  ShieldAlert,
+  Wand2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
