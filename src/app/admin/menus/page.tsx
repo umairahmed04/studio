@@ -49,10 +49,6 @@ interface MenuItem {
   isPremium?: boolean;
 }
 
-/**
- * @fileOverview High-Performance Menu Management Hub.
- * WordPress-style menu builder with dynamic hierarchy and reordering.
- */
 export default function MenuManagement() {
   const db = useFirestore();
   const { user } = useUser();
@@ -64,10 +60,8 @@ export default function MenuManagement() {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const isProvisioning = useRef(false);
 
-  // Custom Link State
   const [customLink, setCustomLink] = useState({ label: '', url: '', isExternal: false });
 
-  // Fetch Collections
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
   const blogQuery = useMemo(() => db ? query(collection(db, 'blog_posts'), orderBy('updatedAt', 'desc')) : null, [db]);
   const catQuery = useMemo(() => db ? query(collection(db, 'blog_categories'), orderBy('name', 'asc')) : null, [db]);
@@ -91,7 +85,6 @@ export default function MenuManagement() {
     { label: 'AI Interview Prep', href: '/interview-prep', icon: 'Mic', desc: 'Practice voice rounds', premium: true },
   ];
 
-  // Logic: Restore Original Menu Structure on Provisioning
   useEffect(() => {
     const provision = async () => {
       if (!db || menusLoading || !menus || isProvisioning.current) return;
@@ -271,16 +264,6 @@ export default function MenuManagement() {
   };
   const handleDragEnd = () => setDraggedIdx(null);
 
-  const handleAssignLocation = async (locKey: string, menuId: string) => {
-    if (!locationsRef) return;
-    try {
-      await setDoc(locationsRef, { [locKey]: menuId }, { merge: true });
-      toast({ title: "Location Mapped" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Assignment Failed" });
-    }
-  };
-
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -299,7 +282,7 @@ export default function MenuManagement() {
         </div>
       </div>
 
-      <Card className="glass border-white/5">
+      <Card className="glass border-white/10 shadow-xl">
         <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest shrink-0">Current Menu:</span>
@@ -327,7 +310,7 @@ export default function MenuManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <aside className="lg:col-span-4 space-y-6">
-          <Card className="border-white/5 bg-card/50">
+          <Card className="glass border-white/10 overflow-hidden">
             <CardHeader className="py-4 border-b bg-muted/10">
               <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest">
                 <Layout size={14} className="text-primary" />
@@ -373,20 +356,6 @@ export default function MenuManagement() {
                       <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
                         <span className="text-xs font-bold truncate pr-2">{p.title}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(p.title, `/${p.slug === 'home' ? '' : p.slug}`)}>
-                          <Plus size={14} />
-                        </Button>
-                      </div>
-                    ))}
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="posts" className="border-b px-4">
-                  <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Blog Articles</AccordionTrigger>
-                  <AccordionContent className="pt-0 pb-4 space-y-2">
-                    {posts?.map(p => (
-                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
-                        <span className="text-xs font-bold truncate pr-2">{p.title}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(p.title, `/blog/${p.slug || p.id}`)}>
                           <Plus size={14} />
                         </Button>
                       </div>
@@ -444,7 +413,7 @@ export default function MenuManagement() {
         </aside>
 
         <main className="lg:col-span-8 space-y-6">
-          <Card className="border-white/5 bg-card/50 min-h-[600px] flex flex-col shadow-2xl">
+          <Card className="glass border-white/10 min-h-[600px] flex flex-col shadow-2xl">
             <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-muted/5">
               <div className="space-y-1">
                 <CardTitle className="text-xl font-headline font-bold">Structure Builder</CardTitle>
@@ -467,7 +436,7 @@ export default function MenuManagement() {
                         onDragOver={(e) => handleDragOver(e, idx)}
                         onDragEnd={handleDragEnd}
                         className={cn(
-                          "group p-3 rounded-xl border border-white/5 bg-background shadow-sm flex items-center justify-between transition-all hover:border-primary/20 cursor-move",
+                          "group p-3 rounded-xl border border-white/10 bg-background/50 shadow-sm flex items-center justify-between transition-all hover:border-primary/20 cursor-move",
                           draggedIdx === idx && "opacity-50 scale-[0.98] border-primary/40",
                           item.level === 1 && "ml-8 bg-muted/10",
                           item.level === 2 && "ml-16 bg-muted/20"
@@ -499,7 +468,6 @@ export default function MenuManagement() {
                         </div>
                       </div>
 
-                      {/* Expandable Meta Data */}
                       <Accordion type="single" collapsible className="w-full">
                         <AccordionItem value="meta" className="border-0">
                           <AccordionTrigger className={cn(
@@ -507,21 +475,21 @@ export default function MenuManagement() {
                             item.level === 1 && "ml-8",
                             item.level === 2 && "ml-16"
                           )}>
-                            Settings & Mega-Menu
+                            Settings & Submenu Meta
                           </AccordionTrigger>
                           <AccordionContent className={cn(
                             "pt-2 pb-4 space-y-4",
                             item.level === 1 && "ml-8",
                             item.level === 2 && "ml-16"
                           )}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/10 p-4 rounded-xl border border-white/5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/10 p-4 rounded-xl border border-white/10">
                                <div className="space-y-1.5">
                                   <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1"><Info size={10} /> Description</Label>
                                   <Input 
                                     value={item.description || ''} 
                                     onChange={(e) => updateItemField(item.id, 'description', e.target.value)}
                                     placeholder="Brief sub-text..." 
-                                    className="h-8 text-xs" 
+                                    className="h-8 text-xs bg-background/50" 
                                   />
                                </div>
                                <div className="space-y-1.5">
@@ -530,8 +498,16 @@ export default function MenuManagement() {
                                     value={item.iconName || ''} 
                                     onChange={(e) => updateItemField(item.id, 'iconName', e.target.value)}
                                     placeholder="Search, Layout, etc." 
-                                    className="h-8 text-xs font-mono" 
+                                    className="h-8 text-xs font-mono bg-background/50" 
                                   />
+                               </div>
+                               <div className="flex items-center gap-2 pt-2 col-span-2">
+                                  <Checkbox 
+                                    id={`premium-${item.id}`} 
+                                    checked={item.isPremium || false} 
+                                    onCheckedChange={(checked) => updateItemField(item.id, 'isPremium', !!checked)} 
+                                  />
+                                  <Label htmlFor={`premium-${item.id}`} className="text-[10px] font-bold cursor-pointer">Mark as Premium Tool</Label>
                                </div>
                             </div>
                           </AccordionContent>
@@ -543,7 +519,7 @@ export default function MenuManagement() {
               )}
             </CardContent>
             <CardFooter className="p-6 border-t bg-muted/10 flex justify-end">
-              <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-10 h-11 shadow-lg shadow-primary/10">
+              <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-10 h-11 shadow-lg shadow-primary/20">
                 {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
                 Sync Database
               </Button>

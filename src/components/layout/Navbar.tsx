@@ -30,10 +30,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from './ThemeToggle';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -58,9 +55,6 @@ const ICON_MAP: Record<string, any> = {
   ShieldAlert
 };
 
-/**
- * Gets specific background and text colors for tools to match the reference image.
- */
 const getIconStyle = (iconName: string) => {
   switch(iconName) {
     case 'Search': return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
@@ -73,10 +67,6 @@ const getIconStyle = (iconName: string) => {
   }
 }
 
-/**
- * @fileOverview High-Performance Dynamic Navigation.
- * Features specialized Mega-Menu rendering for professional tools.
- */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
   const auth = useAuth();
@@ -162,7 +152,6 @@ export function Navbar() {
                   <div className="grid grid-cols-2 gap-x-8 gap-y-8">
                     {item.children.map((child: any, cIdx: number) => {
                       const Icon = ICON_MAP[child.iconName] || HelpCircle;
-                      // Add a separator before the 5th item to match reference image (AI Interview Prep row)
                       const showSeparator = cIdx === 4;
                       
                       return (
@@ -204,7 +193,7 @@ export function Navbar() {
                 <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest text-muted-foreground outline-none">
                   {item.label} <ChevronDown size={14} />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
+                <DropdownMenuContent className="w-56 p-2 mt-2 glass border-white/10" align="start">
                   {item.children.map((child: any, cIdx: number) => (
                     <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
                       <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
@@ -244,7 +233,7 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 p-2 mt-2" align="end">
+              <DropdownMenuContent className="w-64 p-2 mt-2 glass border-white/10" align="end">
                 <div className="flex items-center gap-3 p-3 mb-2 bg-muted/50 rounded-lg">
                   <Avatar className="h-10 w-10 border-2 border-background">
                     <AvatarImage src={userData?.photoURL || user.photoURL || ''} />
@@ -306,7 +295,7 @@ export function Navbar() {
                   <MenuIcon size={24} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 p-2">
+              <DropdownMenuContent align="end" className="w-64 p-2 glass border-white/10">
                 {processedMenuItems.map((item, mIdx) => (
                   <React.Fragment key={`${item.id}-${mIdx}`}>
                     <DropdownMenuItem asChild className="p-3">
