@@ -1,12 +1,13 @@
-import { CheckCircle2, ShieldCheck, Zap, Sparkles, HelpCircle } from 'lucide-react';
+import { Metadata } from 'next';
+import { CheckCircle2, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-export const metadata = {
-  title: 'Affordable Pricing | Professional AI Resume Tools | ATSResumeScan',
-  description: 'Choose the best plan for your career success. Free ATS scans, premium AI optimization, and professional resume templates.',
+export const metadata: Metadata = {
+  title: 'Affordable Pricing | Professional AI Resume Tools & Success Plans',
+  description: 'Invest in your career with the best AI resume tools. Free ATS scans, premium optimization, and expert career guidance starting at $0.',
 };
 
 export default function PricingPage() {
@@ -103,7 +104,6 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Pricing FAQ Section */}
         <div className="max-w-4xl mx-auto space-y-12">
           <h2 className="text-3xl font-headline font-bold text-center">Frequently Asked Questions</h2>
           <Accordion type="single" collapsible className="w-full">

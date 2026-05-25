@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -11,13 +10,17 @@ import { Users, Target, ShieldCheck, Heart, ArrowRight, Loader2 } from 'lucide-r
 import Link from 'next/link';
 
 /**
- * @fileOverview About Us Page with dynamic CMS prioritization.
- * Listens for CMS changes in real-time to ensure instant synchronization.
+ * @fileOverview About Us Page with dynamic CMS prioritization and SEO Sync.
  */
 export default function AboutPage() {
   const db = useFirestore();
   const [cmsPage, setCmsPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // SEO Sync for the static/fallback state
+    document.title = "Our Mission | Bridging the Recruitment Gap | ATSResumeScan";
+  }, []);
 
   useEffect(() => {
     if (!db) return;
@@ -49,12 +52,10 @@ export default function AboutPage() {
     );
   }
 
-  // 1. If CMS Content exists and is published, prioritize it
   if (cmsPage) {
     return <PageRenderer pageId={cmsPage.id} />;
   }
 
-  // 2. Fallback to the High-Tier Professional Static Layout
   return (
     <ToolLayout 
       title="Leveling the Recruitment Playing Field" 

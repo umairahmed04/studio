@@ -1,13 +1,14 @@
+import { Metadata } from 'next';
 import { ToolLayout } from '@/components/tools/ToolLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, MessageCircle, HelpCircle } from 'lucide-react';
+import { Mail, HelpCircle } from 'lucide-react';
 
-export const metadata = {
-  title: 'Contact Us | Support & Partnerships | ATSResumeScan',
-  description: 'Have questions about your resume score or interested in partnership opportunities? Contact the ATSResumeScan team today.',
+export const metadata: Metadata = {
+  title: 'Contact Us | Support & Professional Partnerships',
+  description: 'Have questions about your resume score or interested in career partnerships? Contact the ATSResumeScan team today for expert support.',
 };
 
 export default function ContactPage() {

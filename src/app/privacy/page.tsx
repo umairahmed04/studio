@@ -1,4 +1,10 @@
+import { Metadata } from 'next';
 import { ToolLayout } from '@/components/tools/ToolLayout';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Your Data Security at ATSResumeScan',
+  description: 'Learn how ATSResumeScan protects your personal data and resume information. We are committed to transparency and high-performance data encryption.',
+};
 
 export default function PrivacyPage() {
   return (

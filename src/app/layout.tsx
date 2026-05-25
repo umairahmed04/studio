@@ -9,24 +9,34 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
 
 export const metadata: Metadata = {
-  title: 'ATSResumeScan | Free AI ATS Resume Checker & CV Optimizer',
-  description: 'Instantly check your ATS resume score, optimize with AI, and beat recruitment bots. The #1 free tool for ATS-friendly resume building and keyword optimization.',
-  keywords: 'ATS resume checker, resume score, AI resume builder, beat ATS, resume optimization, CV builder, free resume scan',
+  title: {
+    default: 'ATSResumeScan | Free AI ATS Resume Checker & CV Optimizer',
+    template: '%s | ATSResumeScan'
+  },
+  description: 'Instantly check your ATS resume score, optimize with AI, and beat recruitment bots. The #1 free tool for ATS-friendly resume building and high-performance keyword optimization.',
+  keywords: ['ATS resume checker', 'resume score', 'AI resume builder', 'beat recruitment bots', 'resume optimization', 'CV builder', 'free resume scan', '2026 resume trends'],
   metadataBase: new URL('https://atsresumescan.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'ATSResumeScan | Beat the Recruitment Bots with AI',
-    description: 'Optimize your resume for ATS systems in seconds. Free score breakdown and AI-powered improvements.',
+    title: 'ATSResumeScan | Beat the Recruitment Bots with High-Performance AI',
+    description: 'Optimize your resume for ATS systems in seconds. Get a free score breakdown, find keyword gaps, and land more interviews with AI.',
     type: 'website',
     url: 'https://atsresumescan.com',
     siteName: 'ATSResumeScan',
+    images: [{
+      url: '/og-image.jpg',
+      width: 1200,
+      height: 630,
+      alt: 'ATSResumeScan AI Optimizer'
+    }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ATSResumeScan | AI Resume Optimization',
-    description: 'Stop getting rejected by bots. Check your ATS score now.',
+    title: 'ATSResumeScan | AI Resume Optimization & ATS Audit',
+    description: 'Stop getting rejected by bots. Check your ATS score and optimize your career trajectory now.',
+    creator: '@atsresumescan'
   }
 };
 
@@ -41,11 +51,22 @@ export default function RootLayout({
     "name": "ATSResumeScan",
     "url": "https://atsresumescan.com",
     "logo": "https://atsresumescan.com/icon.png",
-    "description": "Professional AI-powered ATS resume checker and CV optimization platform.",
+    "description": "Professional AI-powered ATS resume checker and CV optimization platform designed to help job seekers rank in the top 1% of applicants.",
     "sameAs": [
       "https://twitter.com/atsresumescan",
       "https://linkedin.com/company/atsresumescan"
     ]
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://atsresumescan.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://atsresumescan.com/blog?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
   };
 
   return (
@@ -57,6 +78,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col selection:bg-primary/30 selection:text-primary">
