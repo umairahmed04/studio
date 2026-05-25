@@ -8,7 +8,7 @@ import { doc, collection, query } from 'firebase/firestore';
 
 /**
  * @fileOverview Dynamic Global Footer.
- * Maps CMS-driven menu items into structural layout columns.
+ * Maps hierarchical CMS-driven menu items into structural layout columns.
  */
 export function Footer() {
   const db = useFirestore();
@@ -31,7 +31,7 @@ export function Footer() {
    */
   const footerColumns = useMemo(() => {
     if (!activeFooterMenu?.items || activeFooterMenu.items.length === 0) {
-      return []; // CMS fallback (renders nothing or basic info)
+      return [];
     }
 
     const columns: any[] = [];
@@ -42,7 +42,11 @@ export function Footer() {
         currentColumn = { title: item.label, links: [] };
         columns.push(currentColumn);
       } else if (item.level >= 1 && currentColumn) {
-        currentColumn.links.push({ label: item.label, href: item.href, target: item.target });
+        currentColumn.links.push({ 
+          label: item.label, 
+          href: item.href, 
+          target: item.target 
+        });
       }
     });
 
@@ -89,7 +93,7 @@ export function Footer() {
                       className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
                     >
                       {link.label}
-                      {link.href.startsWith('http') && <ExternalLink size={10} className="opacity-40" />}
+                      {link.target === '_blank' && <ExternalLink size={10} className="opacity-40" />}
                     </Link>
                   </li>
                 ))}

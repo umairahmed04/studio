@@ -12,12 +12,6 @@ import {
   ShieldCheck, 
   UserCircle,
   ChevronDown,
-  Search,
-  Layout,
-  Wand2,
-  ArrowLeftRight,
-  Mic,
-  Share2,
   ExternalLink
 } from 'lucide-react';
 import {
@@ -34,13 +28,11 @@ import { ThemeToggle } from './ThemeToggle';
 import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { doc, collection, query, onSnapshot } from 'firebase/firestore';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { doc, collection, query } from 'firebase/firestore';
 
 /**
  * @fileOverview High-Performance Dynamic Navigation.
- * Fetches and renders nested CMS menus with real-time synchronization.
+ * Fetches and renders nested CMS menus with recursive hierarchy.
  */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
@@ -50,15 +42,12 @@ export function Navbar() {
   const userRef = useMemo(() => user && db ? doc(db, 'users', user.uid) : null, [user, db]);
   const { data: userData } = useDoc(userRef);
 
-  // Fetch Navigation Assignments
   const navSettingsRef = useMemo(() => db ? doc(db, 'settings', 'navigation') : null, [db]);
   const { data: navSettings } = useDoc(navSettingsRef);
 
-  // Fetch All Menus
   const menusQuery = useMemo(() => db ? query(collection(db, 'menus')) : null, [db]);
   const { data: menus } = useCollection(menusQuery);
 
-  // Determine Active Header Menu
   const activeHeaderMenu = useMemo(() => {
     if (!menus || !navSettings?.header) return null;
     return menus.find(m => m.id === navSettings.header);
@@ -71,30 +60,33 @@ export function Navbar() {
   };
 
   /**
-   * Transforms flat Firestore array with levels into a nested recursive tree.
-   * Supports up to 3 levels of nesting (Standard CMS Architecture).
+   * Transforms flat Firestore array with levels into a recursive tree using a stack.
+   * Supports unlimited hierarchy levels (UI capped at 3 tiers).
    */
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
     
-    const rootItems: any[] = [];
-    let currentParent: any = null;
-    let currentSubParent: any = null;
+    const tree: any[] = [];
+    const stack: any[] = [];
 
     activeHeaderMenu.items.forEach((item: any) => {
-      if (item.level === 0) {
-        currentParent = { ...item, children: [] };
-        rootItems.push(currentParent);
-        currentSubParent = null;
-      } else if (item.level === 1 && currentParent) {
-        currentSubParent = { ...item, children: [] };
-        currentParent.children.push(currentSubParent);
-      } else if (item.level === 2 && currentSubParent) {
-        currentSubParent.children.push({ ...item });
+      const node = { ...item, children: [] };
+      
+      // While the stack has items at a deeper or same level, pop them
+      while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+        stack.pop();
       }
+
+      if (stack.length === 0) {
+        tree.push(node);
+      } else {
+        stack[stack.length - 1].children.push(node);
+      }
+
+      stack.push(node);
     });
 
-    return rootItems;
+    return tree;
   }, [activeHeaderMenu]);
 
   return (
@@ -121,9 +113,8 @@ export function Navbar() {
         {/* Desktop Navigation Engine */}
         <nav className="hidden lg:flex items-center gap-8">
           {processedMenuItems.length === 0 ? (
-            // Fallback Menu if CMS is unconfigured
             <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
-               System Initializing...
+               System Ready...
             </div>
           ) : (
             processedMenuItems.map((item) => (
@@ -142,7 +133,7 @@ export function Navbar() {
                                <DropdownMenuItem key={sub.id} asChild className="p-3 cursor-pointer">
                                   <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
                                     {sub.label}
-                                    {sub.href.startsWith('http') && <ExternalLink size={10} />}
+                                    {sub.target === '_blank' && <ExternalLink size={10} />}
                                   </Link>
                                </DropdownMenuItem>
                              ))}
@@ -152,7 +143,7 @@ export function Navbar() {
                         <DropdownMenuItem key={child.id} asChild className="p-3 cursor-pointer">
                           <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
                             {child.label}
-                            {child.href.startsWith('http') && <ExternalLink size={10} />}
+                            {child.target === '_blank' && <ExternalLink size={10} />}
                           </Link>
                         </DropdownMenuItem>
                       )
@@ -164,9 +155,10 @@ export function Navbar() {
                   key={item.id} 
                   href={item.href} 
                   target={item.target || '_self'}
-                  className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground"
+                  className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground flex items-center gap-1"
                 >
                   {item.label}
+                  {item.target === '_blank' && <ExternalLink size={10} />}
                 </Link>
               )
             ))
@@ -243,7 +235,6 @@ export function Navbar() {
             )
           )}
 
-          {/* Mobile Navigation Integration */}
           <div className="lg:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -255,11 +246,11 @@ export function Navbar() {
                 {processedMenuItems.map((item) => (
                   <React.Fragment key={item.id}>
                     <DropdownMenuItem asChild className="p-3">
-                      <Link href={item.href} className="font-bold uppercase text-xs tracking-widest">{item.label}</Link>
+                      <Link href={item.href} target={item.target || '_self'} className="font-bold uppercase text-xs tracking-widest">{item.label}</Link>
                     </DropdownMenuItem>
                     {item.children?.map((child: any) => (
                       <DropdownMenuItem key={child.id} asChild className="p-3 pl-6">
-                        <Link href={child.href} className="text-xs font-medium text-muted-foreground">{child.label}</Link>
+                        <Link href={child.href} target={child.target || '_self'} className="text-xs font-medium text-muted-foreground">{child.label}</Link>
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />

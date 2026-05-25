@@ -5,34 +5,30 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useCollection, useDoc } from '@/firebase';
-import { collection, query, orderBy, doc, setDoc, serverTimestamp, deleteDoc, addDoc, getDocs, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, doc, setDoc, serverTimestamp, deleteDoc, addDoc } from 'firebase/firestore';
 import { 
   Plus, 
   Trash2, 
   Loader2, 
   GripVertical, 
   ChevronRight, 
-  ChevronDown, 
   Save, 
   Layout, 
   Link as LinkIcon, 
-  ArrowRight, 
-  FileText, 
-  Tag, 
-  Check, 
-  Settings2,
+  ArrowUp, 
+  ArrowDown, 
   ChevronLeft,
-  ArrowUp,
-  ArrowDown,
   Menu,
   Wand2,
-  Zap
+  Settings2,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn, cleanForFirestore } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface MenuItem {
   id: string;
@@ -56,6 +52,9 @@ export default function MenuManagement() {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const isProvisioning = useRef(false);
 
+  // Custom Link State
+  const [customLink, setCustomLink] = useState({ label: '', url: '', isExternal: false });
+
   // Fetch Collections for Menu Sources
   const pagesQuery = useMemo(() => db ? query(collection(db, 'pages')) : null, [db]);
   const blogQuery = useMemo(() => db ? query(collection(db, 'blog_posts'), orderBy('updatedAt', 'desc')) : null, [db]);
@@ -67,7 +66,6 @@ export default function MenuManagement() {
   const { data: menus, loading: menusLoading } = useCollection(menusQuery);
   const { data: locations } = useDoc(locationsRef);
 
-  // System Tools Registry for Menu Injection
   const systemTools = [
     { label: 'ATS Resume Scan', href: '/ats-resume-checker' },
     { label: 'Interactive CV Builder', href: '/cv-builder' },
@@ -79,7 +77,6 @@ export default function MenuManagement() {
     { label: 'Interview Prep', href: '/interview-prep' },
   ];
 
-  // 1. Auto-Provision Header and Footer Menus with Default Items
   useEffect(() => {
     const provision = async () => {
       if (!db || menusLoading || !menus || isProvisioning.current) return;
@@ -114,7 +111,6 @@ export default function MenuManagement() {
       ];
 
       let createdAny = false;
-
       for (const config of standardMenus) {
         const exists = menus.some(m => m.name === config.name);
         if (!exists) {
@@ -125,8 +121,6 @@ export default function MenuManagement() {
               items: config.items,
               createdAt: serverTimestamp()
             });
-
-            // Auto-assign location if settings doc is empty for that location
             if (locationsRef) {
               const locKey = config.name.toLowerCase().includes('header') ? 'header' : 'footer';
               await setDoc(locationsRef, { [locKey]: docRef.id }, { merge: true });
@@ -137,29 +131,22 @@ export default function MenuManagement() {
           }
         }
       }
-      if (createdAny) {
-        toast({ title: "System Menus Synchronized", description: "Default navigation structure created." });
-      }
+      if (createdAny) toast({ title: "System Menus Synchronized" });
     };
     provision();
   }, [db, menus, menusLoading, toast, locationsRef]);
 
-  // 2. Initialize active menu
   useEffect(() => {
     if (menus && menus.length > 0 && !activeMenuId) {
-      // Prioritize Header Menu if available
       const header = menus.find(m => m.name === 'Header Menu');
       setActiveMenuId(header ? header.id : menus[0].id);
     }
   }, [menus, activeMenuId]);
 
-  // 3. Load menu for editing
   useEffect(() => {
     if (menus && activeMenuId) {
       const menu = menus.find(m => m.id === activeMenuId);
-      if (menu) {
-        setEditingMenu({ name: menu.name, items: menu.items || [] });
-      }
+      if (menu) setEditingMenu({ name: menu.name, items: menu.items || [] });
     }
   }, [menus, activeMenuId]);
 
@@ -174,9 +161,9 @@ export default function MenuManagement() {
         createdAt: serverTimestamp()
       });
       setActiveMenuId(docRef.id);
-      toast({ title: "Menu Created", description: `"${name}" is ready for structuring.` });
+      toast({ title: "Menu Created" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error", description: "Could not create menu document." });
+      toast({ variant: "destructive", title: "Error" });
     }
   };
 
@@ -190,30 +177,21 @@ export default function MenuManagement() {
         updatedAt: serverTimestamp()
       });
       await setDoc(doc(db, 'menus', activeMenuId), sanitizedData, { merge: true });
-      toast({ title: "Menu Synced", description: "Changes are now live on the assigned locations." });
+      toast({ title: "Menu Synced" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Save Failed", description: "Internal sync error." });
+      toast({ variant: "destructive", title: "Save Failed" });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAssignLocation = async (locKey: string, menuId: string) => {
-    if (!locationsRef) return;
-    try {
-      await setDoc(locationsRef, { [locKey]: menuId }, { merge: true });
-      toast({ title: "Location Assigned", description: `Location "${locKey}" now points to selected menu.` });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Assignment Failed" });
-    }
-  };
-
-  const addItemToMenu = (label: string, href: string) => {
+  const addItemToMenu = (label: string, href: string, target: '_blank' | '_self' = '_self') => {
     if (!editingMenu) return;
     const newItem: MenuItem = {
       id: Math.random().toString(36).substring(7),
       label,
       href,
+      target,
       level: 0
     };
     setEditingMenu({ ...editingMenu, items: [...editingMenu.items, newItem] });
@@ -248,26 +226,27 @@ export default function MenuManagement() {
     setEditingMenu({ ...editingMenu, items: newItems });
   };
 
-  // Drag and Drop Functional Handlers
-  const handleDragStart = (idx: number) => {
-    setDraggedIdx(idx);
-  };
-
+  const handleDragStart = (idx: number) => setDraggedIdx(idx);
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === idx) return;
-    
     const newItems = [...editingMenu!.items];
     const item = newItems[draggedIdx];
     newItems.splice(draggedIdx, 1);
     newItems.splice(idx, 0, item);
-    
     setEditingMenu({ ...editingMenu!, items: newItems });
     setDraggedIdx(idx);
   };
+  const handleDragEnd = () => setDraggedIdx(null);
 
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
+  const handleAssignLocation = async (locKey: string, menuId: string) => {
+    if (!locationsRef) return;
+    try {
+      await setDoc(locationsRef, { [locKey]: menuId }, { merge: true });
+      toast({ title: "Location Assigned" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Assignment Failed" });
+    }
   };
 
   return (
@@ -315,7 +294,6 @@ export default function MenuManagement() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Side: Dynamic Sources */}
         <aside className="lg:col-span-4 space-y-6">
           <Card className="border-white/5 bg-card/50">
             <CardHeader className="py-4 border-b bg-muted/10">
@@ -376,18 +354,42 @@ export default function MenuManagement() {
                   <AccordionContent className="pt-0 pb-4 space-y-4">
                     <div className="space-y-3">
                       <div className="space-y-1">
-                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Absolute URL</Label>
-                         <Input id="custom-url" placeholder="https://..." className="h-9 text-xs font-mono" />
+                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Custom Link URL</Label>
+                         <Input 
+                           value={customLink.url}
+                           onChange={(e) => setCustomLink({...customLink, url: e.target.value})}
+                           placeholder="https://... or #anchor" 
+                           className="h-9 text-xs font-mono" 
+                         />
                       </div>
                       <div className="space-y-1">
-                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Display Label</Label>
-                         <Input id="custom-label" placeholder="Support Center" className="h-9 text-xs" />
+                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Navigation Label</Label>
+                         <Input 
+                           value={customLink.label}
+                           onChange={(e) => setCustomLink({...customLink, label: e.target.value})}
+                           placeholder="e.g. My Website" 
+                           className="h-9 text-xs" 
+                         />
                       </div>
-                      <Button className="w-full h-9 text-[10px] font-black uppercase" size="sm" onClick={() => {
-                        const url = (document.getElementById('custom-url') as HTMLInputElement).value;
-                        const label = (document.getElementById('custom-label') as HTMLInputElement).value;
-                        if(url && label) addItemToMenu(label, url);
-                      }}>Add to Structure</Button>
+                      <div className="flex items-center gap-2">
+                         <Checkbox 
+                           id="is-ext" 
+                           checked={customLink.isExternal} 
+                           onCheckedChange={(checked) => setCustomLink({...customLink, isExternal: !!checked})} 
+                         />
+                         <Label htmlFor="is-ext" className="text-[10px] font-bold cursor-pointer">Open in new tab</Label>
+                      </div>
+                      <Button 
+                        className="w-full h-9 text-[10px] font-black uppercase" 
+                        size="sm" 
+                        disabled={!customLink.label || !customLink.url}
+                        onClick={() => {
+                          addItemToMenu(customLink.label, customLink.url, customLink.isExternal ? '_blank' : '_self');
+                          setCustomLink({ label: '', url: '', isExternal: false });
+                        }}
+                      >
+                        Add Custom Link
+                      </Button>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -424,19 +426,18 @@ export default function MenuManagement() {
                   </div>
                </div>
                <p className="text-[9px] text-muted-foreground italic leading-relaxed pt-4 border-t border-white/5">
-                 Changes to assignments are pushed instantly to all site visitors.
+                 Changes go live instantly across all locations.
                </p>
             </CardContent>
           </Card>
         </aside>
 
-        {/* Right Side: Structure Builder with Drag & Drop */}
         <main className="lg:col-span-8 space-y-6">
           <Card className="border-white/5 bg-card/50 min-h-[600px] flex flex-col shadow-2xl">
             <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-muted/5">
               <div className="space-y-1">
                 <CardTitle className="text-xl font-headline font-bold">Structure Builder</CardTitle>
-                <CardDescription>Drag the grip icons to reorder or use the arrow controls.</CardDescription>
+                <CardDescription>Drag items to reorder or use the controls to create submenus.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black uppercase text-muted-foreground">Rename:</span>
@@ -452,7 +453,7 @@ export default function MenuManagement() {
               {!editingMenu || editingMenu.items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-20 space-y-4 border-2 border-dashed rounded-3xl opacity-40">
                   <Menu size={48} />
-                  <p className="text-sm font-medium">Inject content from the left panel to begin.</p>
+                  <p className="text-sm font-medium">Inject content to begin building your navigation.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -475,7 +476,10 @@ export default function MenuManagement() {
                           <GripVertical size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold">{item.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{item.label}</span>
+                            {item.target === '_blank' && <ExternalLink size={10} className="text-primary" />}
+                          </div>
                           <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{item.href}</span>
                         </div>
                       </div>
@@ -500,12 +504,12 @@ export default function MenuManagement() {
               <div className="flex items-center gap-2">
                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                   {editingMenu?.items.length || 0} Dynamic Nodes Configured
+                   {editingMenu?.items.length || 0} Dynamic Links Configured
                  </span>
               </div>
               <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-10 h-11">
                 {saving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
-                Save Structure
+                Save Changes
               </Button>
             </CardFooter>
           </Card>
