@@ -68,7 +68,10 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (navData) {
-      setNavForm(navData);
+      setNavForm({
+        menuItems: [],
+        ...navData
+      });
     } else if (!navLoading) {
       setNavForm({
         menuItems: [
@@ -89,7 +92,10 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (blogData) {
-      setBlogForm(blogData);
+      setBlogForm({
+        categories: [],
+        ...blogData
+      });
     } else if (!blogLoading) {
       setBlogForm({
         categories: [
@@ -304,7 +310,7 @@ export default function AdminSettings() {
               <Button size="sm" onClick={handleSaveNav} disabled={saving}><Save size={16} className="mr-2" /> Save Navigation</Button>
             </CardHeader>
             <CardContent className="space-y-4">
-               {navForm.menuItems.map((item: any, idx: number) => (
+               {navForm.menuItems?.map((item: any, idx: number) => (
                  <div key={idx} className="flex gap-4 items-center bg-muted/20 p-3 rounded-lg border">
                     <GripVertical size={16} className="text-muted-foreground" />
                     <Input placeholder="Label" value={item.label} onChange={(e) => {
@@ -324,7 +330,7 @@ export default function AdminSettings() {
                  </div>
                ))}
                <Button variant="outline" className="w-full border-dashed" onClick={() => {
-                 setNavForm({...navForm, menuItems: [...navForm.menuItems, { label: '', href: '' }]});
+                 setNavForm({...navForm, menuItems: [...(navForm.menuItems || []), { label: '', href: '' }]});
                }}><Plus size={16} className="mr-2" /> Add Menu Item</Button>
             </CardContent>
           </Card>
@@ -340,7 +346,7 @@ export default function AdminSettings() {
               <Button size="sm" onClick={handleSaveBlog} disabled={saving}><Save size={16} className="mr-2" /> Save Blog Config</Button>
             </CardHeader>
             <CardContent className="space-y-4">
-               {blogForm.categories.map((cat: string, idx: number) => (
+               {blogForm.categories?.map((cat: string, idx: number) => (
                  <div key={idx} className="flex gap-4 items-center bg-muted/20 p-3 rounded-lg border">
                     <Tag size={16} className="text-primary opacity-50" />
                     <Input 
@@ -359,7 +365,7 @@ export default function AdminSettings() {
                  </div>
                ))}
                <Button variant="outline" className="w-full border-dashed" onClick={() => {
-                 setBlogForm({...blogForm, categories: [...blogForm.categories, '']});
+                 setBlogForm({...blogForm, categories: [...(blogForm.categories || []), '']});
                }}><Plus size={16} className="mr-2" /> Add Category</Button>
             </CardContent>
           </Card>
@@ -379,14 +385,14 @@ export default function AdminSettings() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-muted-foreground">Site Name</label>
                   <Input 
-                    value={formData.seo.siteName} 
+                    value={formData.seo?.purple siteName || ''} 
                     onChange={(e) => setFormData({...formData, seo: {...formData.seo, siteName: e.target.value}})}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-muted-foreground">Default Meta Title</label>
                   <Input 
-                    value={formData.seo.defaultTitle} 
+                    value={formData.seo?.defaultTitle || ''} 
                     onChange={(e) => setFormData({...formData, seo: {...formData.seo, defaultTitle: e.target.value}})}
                   />
                 </div>
@@ -395,7 +401,7 @@ export default function AdminSettings() {
                 <label className="text-xs font-bold uppercase text-muted-foreground">Default Meta Description</label>
                 <Textarea 
                   rows={4}
-                  value={formData.seo.defaultDescription} 
+                  value={formData.seo?.defaultDescription || ''} 
                   onChange={(e) => setFormData({...formData, seo: {...formData.seo, defaultDescription: e.target.value}})}
                 />
               </div>
