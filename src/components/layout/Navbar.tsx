@@ -12,7 +12,17 @@ import {
   ShieldCheck, 
   UserCircle,
   ChevronDown,
-  ExternalLink
+  ExternalLink,
+  Search,
+  Layout,
+  ArrowLeftRight,
+  Wand2,
+  Mic,
+  Share2,
+  Target,
+  Linkedin,
+  HelpCircle,
+  FileText
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,11 +39,25 @@ import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebas
 import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { doc, collection, query } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+const ICON_MAP: Record<string, any> = {
+  Search,
+  Layout,
+  ArrowLeftRight,
+  Wand2,
+  Mic,
+  Share2,
+  Target,
+  Linkedin,
+  HelpCircle,
+  FileText
+};
 
 /**
  * @fileOverview High-Performance Dynamic Navigation.
- * Fetches and renders nested CMS menus with recursive hierarchy.
- * Optimized with composite keys for React stability.
+ * Features specialized Mega-Menu rendering for professional tools.
  */
 export function Navbar() {
   const { user, loading: userLoading } = useUser();
@@ -60,10 +84,6 @@ export function Navbar() {
     if (auth) signOut(auth);
   };
 
-  /**
-   * Transforms flat Firestore array with levels into a recursive tree using a stack.
-   * Produces the exact same UI structure as the original static menu.
-   */
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
     
@@ -110,38 +130,51 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Dynamic Desktop Navigation - Original Design */}
+        {/* Dynamic Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-8">
-          {processedMenuItems.map((item, idx) => (
-            item.children && item.children.length > 0 ? (
+          {processedMenuItems.map((item, idx) => {
+            const isMegaMenu = item.label === 'Tools' && item.children.length > 0;
+            
+            return isMegaMenu ? (
               <DropdownMenu key={`${item.id}-${idx}`}>
-                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground outline-none">
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest text-muted-foreground outline-none">
+                  {item.label} <ChevronDown size={14} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[600px] p-6 mt-2 grid grid-cols-2 gap-6 glass border-white/10" align="start">
+                  {item.children.map((child: any, cIdx: number) => {
+                    const Icon = ICON_MAP[child.iconName] || HelpCircle;
+                    return (
+                      <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-0 bg-transparent hover:bg-transparent focus:bg-transparent cursor-pointer group/item">
+                        <Link href={child.href} target={child.target || '_self'} className="flex items-start gap-4 p-3 rounded-2xl transition-all hover:bg-primary/5 border border-transparent hover:border-primary/10">
+                          <div className="w-12 h-12 rounded-xl bg-muted/50 group-hover/item:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover/item:text-primary transition-colors shadow-inner shrink-0">
+                            <Icon size={24} />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-foreground uppercase tracking-tight">{child.label}</span>
+                              {child.isPremium && <Badge className="bg-amber-500 text-[8px] h-3 px-1 uppercase font-black">PREMIUM</Badge>}
+                            </div>
+                            {child.description && <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-1">{child.description}</p>}
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : item.children && item.children.length > 0 ? (
+              <DropdownMenu key={`${item.id}-${idx}`}>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest text-muted-foreground outline-none">
                   {item.label} <ChevronDown size={14} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 p-2 mt-2" align="start">
                   {item.children.map((child: any, cIdx: number) => (
-                    child.children && child.children.length > 0 ? (
-                      <DropdownMenuSub key={`${child.id}-${cIdx}`}>
-                        <DropdownMenuSubTrigger className="p-3 font-bold text-xs uppercase tracking-wider">{child.label}</DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-56 p-2">
-                           {child.children.map((sub: any, sIdx: number) => (
-                             <DropdownMenuItem key={`${sub.id}-${sIdx}`} asChild className="p-3 cursor-pointer">
-                                <Link href={sub.href} target={sub.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
-                                  {sub.label}
-                                  {sub.target === '_blank' && <ExternalLink size={10} />}
-                                </Link>
-                             </DropdownMenuItem>
-                           ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    ) : (
-                      <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
-                        <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
-                          {child.label}
-                          {child.target === '_blank' && <ExternalLink size={10} />}
-                        </Link>
-                      </DropdownMenuItem>
-                    )
+                    <DropdownMenuItem key={`${child.id}-${cIdx}`} asChild className="p-3 cursor-pointer">
+                      <Link href={child.href} target={child.target || '_self'} className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                        {child.label}
+                        {child.target === '_blank' && <ExternalLink size={10} />}
+                      </Link>
+                    </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -150,13 +183,13 @@ export function Navbar() {
                 key={`${item.id}-${idx}`} 
                 href={item.href} 
                 target={item.target || '_self'}
-                className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-wider text-muted-foreground flex items-center gap-1"
+                className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest text-muted-foreground flex items-center gap-1"
               >
                 {item.label}
-                {item.target === '_blank' && <ExternalLink size={10} />}
+                {item.target === '_blank' && <ExternalLink size={10} className="opacity-40" />}
               </Link>
-            )
-          ))}
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4">

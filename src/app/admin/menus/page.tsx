@@ -25,7 +25,10 @@ import {
   Edit3,
   Tag,
   Check,
-  X
+  X,
+  Sparkles,
+  Info,
+  Type
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -40,12 +43,15 @@ interface MenuItem {
   href: string;
   target?: '_blank' | '_self';
   level: number;
+  description?: string;
+  iconName?: string;
+  isPremium?: boolean;
 }
 
 /**
  * @fileOverview High-Performance Menu Management Hub.
  * WordPress-style menu builder with dynamic hierarchy and reordering.
- * Auto-provisions original site navigation for a seamless transition.
+ * Restores original mega-menu data for a seamless transition.
  */
 export default function MenuManagement() {
   const db = useFirestore();
@@ -72,14 +78,14 @@ export default function MenuManagement() {
   const { data: locations } = useDoc(locationsRef);
 
   const systemTools = [
-    { label: 'ATS Resume Scan', href: '/ats-resume-checker' },
-    { label: 'Interactive CV Builder', href: '/cv-builder' },
-    { label: 'CV Compare & Match', href: '/cv-compare' },
-    { label: 'AI Resume Optimizer', href: '/resume-optimizer' },
-    { label: 'LinkedIn Audit', href: '/linkedin-profile-optimizer' },
-    { label: 'LinkedIn Summary', href: '/linkedin-summary-generator' },
-    { label: 'Job Matcher', href: '/job-description-matcher' },
-    { label: 'Interview Prep', href: '/interview-prep' },
+    { label: 'ATS Resume Scan', href: '/ats-resume-checker', icon: 'Search', desc: 'Check your CV score' },
+    { label: 'Interactive Builder', href: '/cv-builder', icon: 'Layout', desc: 'Recruiter-ready CVs' },
+    { label: 'Compare & Match', href: '/cv-compare', icon: 'ArrowLeftRight', desc: 'Side-by-side analysis' },
+    { label: 'AI Bullet Optimizer', href: '/resume-optimizer', icon: 'Wand2', desc: 'Auto-rewrite bullets' },
+    { label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', icon: 'ShieldCheck', desc: 'Social presence scan' },
+    { label: 'LinkedIn Summary', href: '/linkedin-summary-generator', icon: 'Linkedin', desc: 'Bio generator' },
+    { label: 'Job Matcher', href: '/job-description-matcher', icon: 'Target', desc: 'JD keyword analysis' },
+    { label: 'AI Interview Prep', href: '/interview-prep', icon: 'Mic', desc: 'Practice voice rounds', premium: true },
   ];
 
   // Logic: Restore Original Menu Structure on Provisioning
@@ -92,14 +98,14 @@ export default function MenuManagement() {
           name: 'Header Menu', 
           items: [
             { id: 'h-tools', label: 'Tools', href: '#', level: 0 },
-            { id: 'h-ats', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1 },
-            { id: 'h-cvb', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
-            { id: 'h-cvc', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
-            { id: 'h-rzo', label: 'AI Resume Optimizer', href: '/resume-optimizer', level: 1 },
-            { id: 'h-lpa', label: 'LinkedIn Audit', href: '/linkedin-profile-optimizer', level: 1 },
-            { id: 'h-lsg', label: 'LinkedIn Summary', href: '/linkedin-summary-generator', level: 1 },
-            { id: 'h-jdm', label: 'Job Matcher', href: '/job-description-matcher', level: 1 },
-            { id: 'h-itp', label: 'Interview Prep', href: '/interview-prep', level: 1 },
+            { id: 'h-ats', label: 'ATS Resume Scan', href: '/ats-resume-checker', level: 1, iconName: 'Search', description: 'Check your CV score' },
+            { id: 'h-cvb', label: 'Interactive Builder', href: '/cv-builder', level: 1, iconName: 'Layout', description: 'Recruiter-ready CVs' },
+            { id: 'h-cvc', label: 'Compare & Match', href: '/cv-compare', level: 1, iconName: 'ArrowLeftRight', description: 'Side-by-side analysis' },
+            { id: 'h-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1, iconName: 'Wand2', description: 'Auto-rewrite bullets' },
+            { id: 'h-lpa', label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', level: 1, iconName: 'ShieldCheck', description: 'Social presence scan' },
+            { id: 'h-jdm', label: 'Job Matcher', href: '/job-description-matcher', level: 1, iconName: 'Target', description: 'JD keyword analysis' },
+            { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: true },
+            { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: true },
             { id: 'h-tpl', label: 'Templates', href: '/templates', level: 0 },
             { id: 'h-blg', label: 'Blog', href: '/blog', level: 0 },
             { id: 'h-abt', label: 'About', href: '/about', level: 0 }
@@ -199,14 +205,17 @@ export default function MenuManagement() {
     }
   };
 
-  const addItemToMenu = (label: string, href: string, target: '_blank' | '_self' = '_self') => {
+  const addItemToMenu = (label: string, href: string, details?: any) => {
     if (!editingMenu) return;
     const newItem: MenuItem = {
       id: Math.random().toString(36).substring(7),
       label,
       href,
-      target,
-      level: 0
+      target: details?.target || '_self',
+      level: 0,
+      iconName: details?.icon || '',
+      description: details?.desc || '',
+      isPremium: details?.premium || false
     };
     setEditingMenu({ ...editingMenu, items: [...editingMenu.items, newItem] });
   };
@@ -240,6 +249,14 @@ export default function MenuManagement() {
     setEditingMenu({ ...editingMenu, items: newItems });
   };
 
+  const updateItemField = (id: string, field: keyof MenuItem, value: any) => {
+    if (!editingMenu) return;
+    const newItems = editingMenu.items.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    setEditingMenu({ ...editingMenu, items: newItems });
+  };
+
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
@@ -268,7 +285,7 @@ export default function MenuManagement() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-headline font-bold text-foreground">Menu Management</h1>
-          <p className="text-muted-foreground">Manage your site hierarchy and dynamic locations without UI changes.</p>
+          <p className="text-muted-foreground">Manage your site hierarchy and dynamic mega-menus without UI changes.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button variant="outline" onClick={handleCreateMenu} className="font-bold border-primary/20 text-primary">
@@ -323,11 +340,11 @@ export default function MenuManagement() {
                   <AccordionContent className="pt-0 pb-4 space-y-2">
                     {systemTools.map((tool, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/10 group hover:border-primary/40 transition-all">
-                        <div className="flex items-center gap-2">
-                          <Wand2 size={12} className="text-primary" />
-                          <span className="text-[11px] font-bold truncate pr-2">{tool.label}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[11px] font-bold truncate">{tool.label}</span>
+                          <span className="text-[9px] text-muted-foreground truncate">{tool.desc}</span>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(tool.label, tool.href)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(tool.label, tool.href, tool)}>
                           <Plus size={14} />
                         </Button>
                       </div>
@@ -398,7 +415,7 @@ export default function MenuManagement() {
                         size="sm" 
                         disabled={!customLink.label || !customLink.url}
                         onClick={() => {
-                          addItemToMenu(customLink.label, customLink.url, customLink.isExternal ? '_blank' : '_self');
+                          addItemToMenu(customLink.label, customLink.url, { target: customLink.isExternal ? '_blank' : '_self' });
                           setCustomLink({ label: '', url: '', isExternal: false });
                         }}
                       >
@@ -440,7 +457,7 @@ export default function MenuManagement() {
                   </div>
                </div>
                <p className="text-[9px] text-muted-foreground italic leading-relaxed pt-4 border-t border-white/5">
-                 Frontend UI remains identical; only data becomes dynamic.
+                 Changes reflect instantly on the public site Header and Footer.
                </p>
             </CardContent>
           </Card>
@@ -451,7 +468,7 @@ export default function MenuManagement() {
             <CardHeader className="p-6 border-b flex flex-row items-center justify-between bg-muted/5">
               <div className="space-y-1">
                 <CardTitle className="text-xl font-headline font-bold">Structure Builder</CardTitle>
-                <CardDescription>Visual reordering for Header/Footer hierarchy.</CardDescription>
+                <CardDescription>Visual reordering and mega-menu settings.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black uppercase text-muted-foreground">Rename:</span>
@@ -469,45 +486,94 @@ export default function MenuManagement() {
                   <p className="text-sm font-medium">Inject content to manage navigation.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {editingMenu.items.map((item, idx) => (
-                    <div 
-                      key={`${item.id}-${idx}`} 
-                      draggable
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragOver={(e) => handleDragOver(e, idx)}
-                      onDragEnd={handleDragEnd}
-                      className={cn(
-                        "group p-3 rounded-xl border border-white/5 bg-background shadow-sm flex items-center justify-between transition-all hover:border-primary/20 cursor-move",
-                        draggedIdx === idx && "opacity-50 scale-[0.98] border-primary/40",
-                        item.level === 1 && "ml-8 bg-muted/10",
-                        item.level === 2 && "ml-16 bg-muted/20"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-0.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-                          <GripVertical size={16} />
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold">{item.label}</span>
-                            {item.target === '_blank' && <ExternalLink size={10} className="text-primary" />}
+                    <div key={`${item.id}-${idx}`} className="space-y-2">
+                      <div 
+                        draggable
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragOver={(e) => handleDragOver(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className={cn(
+                          "group p-3 rounded-xl border border-white/5 bg-background shadow-sm flex items-center justify-between transition-all hover:border-primary/20 cursor-move",
+                          draggedIdx === idx && "opacity-50 scale-[0.98] border-primary/40",
+                          item.level === 1 && "ml-8 bg-muted/10",
+                          item.level === 2 && "ml-16 bg-muted/20"
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-0.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <GripVertical size={16} />
                           </div>
-                          <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{item.href}</span>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold">{item.label}</span>
+                              {item.target === '_blank' && <ExternalLink size={10} className="text-primary" />}
+                              {item.isPremium && <Badge className="bg-amber-500 text-[8px] h-3 px-1">PREMIUM</Badge>}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">{item.href}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-white/5">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'up')} disabled={idx === 0}><ArrowUp size={14} /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'down')} disabled={idx === editingMenu.items.length - 1}><ArrowDown size={14} /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'left')} disabled={item.level === 0}><ChevronLeft size={14} /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'right')} disabled={item.level >= 2}><ChevronRight size={14} /></Button>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => removeItem(item.id)}>
+                            <Trash2 size={14} />
+                          </Button>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-white/5">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'up')} disabled={idx === 0}><ArrowUp size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(idx, 'down')} disabled={idx === editingMenu.items.length - 1}><ArrowDown size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'left')} disabled={item.level === 0}><ChevronLeft size={14} /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => adjustNesting(idx, 'right')} disabled={item.level >= 2}><ChevronRight size={14} /></Button>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => removeItem(item.id)}>
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
+
+                      {/* Expandable Meta Data for Mega Menus */}
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="meta" className="border-0">
+                          <AccordionTrigger className={cn(
+                            "py-0 px-8 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-primary transition-colors hover:no-underline",
+                            item.level === 1 && "ml-8",
+                            item.level === 2 && "ml-16"
+                          )}>
+                            Item Meta Data (Mega-Menu Settings)
+                          </AccordionTrigger>
+                          <AccordionContent className={cn(
+                            "pt-2 pb-4 space-y-4",
+                            item.level === 1 && "ml-8",
+                            item.level === 2 && "ml-16"
+                          )}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/10 p-4 rounded-xl border border-white/5">
+                               <div className="space-y-1.5">
+                                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1"><Info size={10} /> Description</Label>
+                                  <Input 
+                                    value={item.description || ''} 
+                                    onChange={(e) => updateItemField(item.id, 'description', e.target.value)}
+                                    placeholder="Brief sub-text..." 
+                                    className="h-8 text-xs" 
+                                  />
+                               </div>
+                               <div className="space-y-1.5">
+                                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1"><Tag size={10} /> Icon Name (Lucide)</Label>
+                                  <Input 
+                                    value={item.iconName || ''} 
+                                    onChange={(e) => updateItemField(item.id, 'iconName', e.target.value)}
+                                    placeholder="Search, Wand2, etc." 
+                                    className="h-8 text-xs font-mono" 
+                                  />
+                               </div>
+                               <div className="flex items-center gap-2 pt-2">
+                                  <Checkbox 
+                                    id={`premium-${item.id}`} 
+                                    checked={item.isPremium || false} 
+                                    onCheckedChange={(checked) => updateItemField(item.id, 'isPremium', !!checked)} 
+                                  />
+                                  <Label htmlFor={`premium-${item.id}`} className="text-[10px] font-bold cursor-pointer">Mark as Premium</Label>
+                               </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     </div>
                   ))}
                 </div>
@@ -517,7 +583,7 @@ export default function MenuManagement() {
               <div className="flex items-center gap-2">
                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                   {editingMenu?.items.length || 0} Original Nodes Mapped
+                   {editingMenu?.items.length || 0} Dynamic Nodes Mapped
                  </span>
               </div>
               <Button onClick={handleSaveMenu} disabled={saving || !editingMenu} className="font-bold px-10 h-11 shadow-lg shadow-primary/10">
