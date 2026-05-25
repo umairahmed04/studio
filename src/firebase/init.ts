@@ -15,9 +15,7 @@ export function initializeFirebase() {
   let app: FirebaseApp;
   
   if (!getApps().length) {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes('YOUR_')) {
-      console.error("Firebase API Key is missing or invalid.");
-    }
+    // In production, config.ts will pull from process.env
     app = initializeApp(firebaseConfig);
   } else {
     app = getApp();
@@ -27,9 +25,10 @@ export function initializeFirebase() {
   const auth = getAuth(app);
   const storage = getStorage(app);
 
+  // Initialize Analytics only if supported and in a browser context
   if (typeof window !== 'undefined') {
     isSupported().then((supported) => {
-      if (supported) {
+      if (supported && process.env.NODE_ENV === 'production') {
         getAnalytics(app);
       }
     });

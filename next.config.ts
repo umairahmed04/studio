@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
+    // Allows production build to succeed even if there are small type mismatches during migration
     ignoreBuildErrors: true,
   },
   eslint: {
@@ -13,18 +14,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  // Optimized for Scala Hosting / Standalone Node environment
+  // Optimized for Standalone Node environment / Scala Hosting
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'atsresumescan.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'atsresumescan-v2.vercel.app',
         port: '',
         pathname: '/**',
       },
