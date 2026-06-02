@@ -3,11 +3,20 @@
 
 runtime: nodejs20
 
+# Explicitly define build settings to ensure standalone output is recognized
+scripts:
+  buildCommand: npm run build
+  runCommand: node .next/standalone/server.js
+
 runConfig:
   minInstances: 0
   maxInstances: 10
   concurrency: 80
+  cpu: 1
+  memoryMiB: 512
 
+# Environment variables mapping
+# Ensure these are also set in the Firebase Console -> App Hosting -> Settings
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     availability: [BUILD, RUNTIME]

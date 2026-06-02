@@ -14,13 +14,19 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  // Optimized for Standalone Node environment / Scala Hosting
+  // Optimized for Standalone Node environment / Scala Hosting / Firebase App Hosting
   output: 'standalone',
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'atsresumescan.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.atsresumescan.com',
         port: '',
         pathname: '/**',
       },

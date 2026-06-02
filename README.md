@@ -24,4 +24,4 @@ npm run repo:nuke
 ## 🌐 Deployment
 Once published:
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Link your **New GitHub Repository** in the App Hosting section.
+2. Link your **New GitHub Repository** in the App Hosting section
