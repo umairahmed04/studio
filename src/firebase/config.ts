@@ -4,7 +4,7 @@
  * Build-Safe Firebase Configuration.
  * 
  * Prioritizes environment variables from Firebase App Hosting.
- * Includes defensive fallbacks to prevent build-time crashes.
+ * Uses the verified production SDK values as safe fallbacks for build-time pre-rendering.
  */
 
 const getSafeEnv = (key: string, fallback: string) => {

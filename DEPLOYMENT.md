@@ -4,17 +4,21 @@ This document outlines the steps required to deploy the platform to a production
 
 ## 1. Environment Configuration
 
-The application requires two sets of keys to function:
+The application is configured to pull credentials from environment variables or use the verified production fallbacks provided during setup.
 
 ### A. Google AI Studio Key (`GOOGLE_API_KEY`)
 - **What it does**: Powers all Gemini AI features (ATS scanning, optimization).
 - **Where to get it**: [Google AI Studio](https://aistudio.google.com/).
-- **Note**: Keep this secret. Do not expose it in the frontend.
+- **Production Value**: `AIzaSyBgPeQKNFrgI0GHg013SKNzk4CCF10e1bU`
 
 ### B. Firebase Web Config (`NEXT_PUBLIC_FIREBASE_*`)
 - **What it does**: Connects the frontend to your database and authentication.
-- **Where to get it**: [Firebase Console](https://console.firebase.google.com/) > Project Settings > Web App.
-- **Finding the Database URL**: Inside your Firebase Web App config snippet, look for `databaseURL`. It usually looks like `https://your-project-id-default-rtdb.firebaseio.com`.
+- **Where to find values**: 
+    1. [Firebase Console](https://console.firebase.google.com/) > Project Settings > Web App.
+    2. Look for `apiKey` and `databaseURL`.
+- **Verified Values**:
+    - API Key: `AIzaSyCYmhxRxGt8AlMjlLvdi2rMWl2_bxI7I68`
+    - Database URL: `https://studio-431801258-767f2-default-rtdb.firebaseio.com`
 
 ---
 
@@ -23,15 +27,9 @@ The application requires two sets of keys to function:
 1. **Secrets Management**:
    - Go to **App Hosting** in the Firebase Console.
    - Select your backend > **Settings > Environment Variables**.
-   - Add the following keys from your Firebase config and Google AI Studio:
+   - Ensure the following keys are added to the console to match `apphosting.yaml`:
      - `NEXT_PUBLIC_FIREBASE_API_KEY`
-     - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
      - `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
-     - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-     - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-     - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-     - `NEXT_PUBLIC_FIREBASE_APP_ID`
-     - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
      - `GOOGLE_API_KEY` (Mark this as a **Secret**)
 
 2. **Deploy Rules**:
@@ -47,8 +45,7 @@ The application requires two sets of keys to function:
 This project is optimized for Standalone Node.js environments using the included `server.js`.
 
 1. **Setup Environment**:
-   - Create a `.env` file on your server.
-   - Fill in your actual production keys (refer to your Firebase Console).
+   - Use the environment variables listed above in your server's `.env` or system settings.
 
 2. **Install & Build**:
    ```bash
@@ -64,5 +61,6 @@ This project is optimized for Standalone Node.js environments using the included
 
 ## 4. Troubleshooting Build Failures
 
-- **Build Timeout**: If the build fails during "Static Generation," ensure your `NEXT_PUBLIC_FIREBASE_*` variables are set in the `BUILD` environment of the App Hosting console.
+- **Resource Already Exists**: This is a transient Firebase rollout error. Push a new commit to trigger a fresh build ID.
+- **Build Timeout**: If the build fails during "Static Generation," ensure your `NEXT_PUBLIC_FIREBASE_*` variables are mapped to `BUILD` in `apphosting.yaml`.
 - **Hydration Errors**: This platform uses `suppressHydrationWarning` on the body tag to handle browser extensions. Do not remove this.

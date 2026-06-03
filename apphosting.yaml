@@ -11,7 +11,7 @@ runConfig:
   memoryMiB: 1024
 
 # Environment variables mapping for Next.js 15
-# Availability: BUILD ensures variables are baked into the client bundle.
+# Availability: BUILD ensures variables are baked into the client bundle (NEXT_PUBLIC_).
 # Availability: RUNTIME ensures variables are available for server actions (AI features).
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
