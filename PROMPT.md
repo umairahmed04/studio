@@ -1,4 +1,4 @@
-# ATS Resume Scan - Ultimate Master Development Blueprint (v27.0)
+# ATS Resume Scan - Ultimate Master Development Blueprint (v28.0)
 
 **Pasting this document into a new AI session will recreate the entire project with 100% accuracy, including all design, logic, security rules, and standalone AI features.**
 
@@ -34,6 +34,7 @@
 
 ## 5. Deployment
 - **API Keys:** Ensure all Firebase credentials and `GOOGLE_API_KEY` are set in the hosting provider's environment settings.
+- **Rollout Ceiling:** Optimized `apphosting.yaml` with 2048MiB memory and Node.js 20.
 - **Firebase:** Standard Firebase Client SDK usage with optimized Firestore queries and real-time listeners.
 
 ---
