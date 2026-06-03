@@ -3,7 +3,7 @@
 /**
  * Build-Safe Firebase Configuration.
  * 
- * Prioritizes environment variables for production security.
+ * Prioritizes environment variables from Firebase App Hosting.
  * Includes defensive fallbacks to prevent build-time crashes.
  */
 
@@ -12,8 +12,6 @@ const getSafeEnv = (key: string, fallback: string) => {
   return process.env[key] || fallback;
 };
 
-// Standard fallback for local development or missing CI keys
-// These are public keys and are safe to include as defaults
 export const firebaseConfig = {
   apiKey: getSafeEnv('NEXT_PUBLIC_FIREBASE_API_KEY', "AIzaSyCYmhxRxGt8AlMjlLvdi2rMWl2_bxI7I68"),
   authDomain: getSafeEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', "studio-431801258-767f2.firebaseapp.com"),

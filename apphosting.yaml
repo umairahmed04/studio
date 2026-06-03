@@ -8,10 +8,11 @@ runConfig:
   maxInstances: 10
   concurrency: 80
   cpu: 1
-  memoryMiB: 1024 # Increased memory for Next.js 15 runtime stability
+  memoryMiB: 1024
 
-# Environment variables mapping
-# Ensure these are also set in the Firebase Console -> App Hosting -> Settings
+# Environment variables mapping for Next.js 15
+# Availability: BUILD ensures variables are baked into the client bundle.
+# Availability: RUNTIME ensures variables are available for server actions (AI features).
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     availability: [BUILD, RUNTIME]
