@@ -4,48 +4,55 @@ This document outlines the steps required to deploy the platform to a production
 
 ## 1. Environment Configuration
 
-Copy the `.env.example` file to `.env` and fill in the required credentials.
+The application requires two sets of keys to function:
 
-```bash
-cp .env.example .env
-```
+### A. Google AI Studio Key (`GOOGLE_API_KEY`)
+- **What it does**: Powers all Gemini AI features (ATS scanning, optimization).
+- **Where to get it**: [Google AI Studio](https://aistudio.google.com/).
+- **Note**: Keep this secret. Do not expose it in the frontend.
 
-### Required Keys:
-- **GOOGLE_API_KEY**: Obtain from Google AI Studio.
-- **Firebase Keys**: Found in your Firebase Project Settings.
+### B. Firebase Web Config (`NEXT_PUBLIC_FIREBASE_*`)
+- **What it does**: Connects the frontend to your database and authentication.
+- **Where to get it**: [Firebase Console](https://console.firebase.google.com/) > Project Settings > Web App.
+
+---
 
 ## 2. Scala Hosting / Standalone Node.js Setup
 
-This project is optimized for Scala Hosting using the included `server.js` entry point.
+This project is optimized for Standalone Node.js environments using the included `server.js`.
 
-1. **Upload Files**: Upload the entire project directory to your server.
-2. **Install Dependencies**:
+1. **Setup Environment**:
+   - Copy `.env.example` to `.env` on your server.
+   - Fill in your actual production keys.
+
+2. **Install & Build**:
    ```bash
-   npm install --production
-   ```
-3. **Build the Project**:
-   ```bash
+   npm install
    npm run build
    ```
-4. **Start the Production Server**:
-   The server is configured for cPanel/Passenger environments. Ensure your "Application Startup File" is set to `server.js`.
+
+3. **Start Production Server**:
+   Ensure your "Application Startup File" is set to `server.js` in your hosting panel.
    ```bash
    npm run server
    ```
 
-## 3. Firebase Deployment
+## 3. Firebase App Hosting Rollout
 
-If you are using Firebase App Hosting or standard Firebase Hosting:
+If you are using Firebase App Hosting:
 
-1. **Firebase CLI**: Install the CLI and login.
+1. **Secrets Management**:
+   - Go to **App Hosting** in the Firebase Console.
+   - Select your backend > **Settings > Environment Variables**.
+   - Add all keys from `.env.example`.
+   - **Important**: Ensure `GOOGLE_API_KEY` is marked as a **Secret** if you are using Cloud Secret Manager.
+
 2. **Deploy Rules**:
    ```bash
    firebase deploy --only firestore:rules
    ```
-3. **App Hosting**: Link your GitHub repository in the Firebase Console under the "App Hosting" tab.
 
-## 4. Troubleshooting
+## 4. Troubleshooting Build Failures
 
-- **Server Component Errors**: Ensure all `NEXT_PUBLIC_` variables are set in the hosting provider's environment settings panel.
-- **AI Scanning Failures**: Check that `GOOGLE_API_KEY` is present in the server-side environment.
-- **Direct URL Refresh (404)**: The `server.js` file handles routing. If using Apache, ensure `.htaccess` routes all traffic to the Node.js process.
+- **Build Timeout**: If the build fails during "Static Generation," ensure your `NEXT_PUBLIC_FIREBASE_*` variables are set in the `BUILD` environment of the App Hosting console.
+- **Image Errors**: Ensure `atsresumescan.com` is verified in your Firebase project to allow optimized image serving.
