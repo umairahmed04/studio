@@ -3,17 +3,12 @@
 
 runtime: nodejs20
 
-# Explicitly define build settings to ensure standalone output is recognized
-scripts:
-  buildCommand: npm run build
-  runCommand: node .next/standalone/server.js
-
 runConfig:
   minInstances: 0
   maxInstances: 10
   concurrency: 80
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 1024 # Increased memory for Next.js 15 runtime stability
 
 # Environment variables mapping
 # Ensure these are also set in the Firebase Console -> App Hosting -> Settings
@@ -29,6 +24,8 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     availability: [BUILD, RUNTIME]
   - variable: GOOGLE_API_KEY
     availability: [RUNTIME]
