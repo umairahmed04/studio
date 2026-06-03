@@ -17,6 +17,7 @@ const getSafeEnv = (key: string, fallback: string) => {
 export const firebaseConfig = {
   apiKey: getSafeEnv('NEXT_PUBLIC_FIREBASE_API_KEY', "AIzaSyCYmhxRxGt8AlMjlLvdi2rMWl2_bxI7I68"),
   authDomain: getSafeEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', "studio-431801258-767f2.firebaseapp.com"),
+  databaseURL: getSafeEnv('NEXT_PUBLIC_FIREBASE_DATABASE_URL', "https://studio-431801258-767f2-default-rtdb.firebaseio.com"),
   projectId: getSafeEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID', "studio-431801258-767f2"),
   storageBucket: getSafeEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', "studio-431801258-767f2.firebasestorage.app"),
   messagingSenderId: getSafeEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', "769637392932"),

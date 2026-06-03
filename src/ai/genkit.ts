@@ -10,9 +10,8 @@ import { googleAI } from '@genkit-ai/google-genai';
  */
 const apiKey = process.env.GOOGLE_API_KEY;
 
-// Use a placeholder if the key is missing to prevent build-time crashes.
-// The runtime flows have internal error handling for invalid keys.
-const safeKey = apiKey || 'BUILD_TIME_PLACEHOLDER';
+// Use the provided production key if the environment variable is missing.
+const safeKey = apiKey || 'AIzaSyBgPeQKNFrgI0GHg013SKNzk4CCF10e1bU';
 
 export const ai = genkit({
   plugins: [
