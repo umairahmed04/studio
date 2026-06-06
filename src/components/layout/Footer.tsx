@@ -17,7 +17,7 @@ const DEFAULT_FOOTER_MENU = [
     { label: 'Interactive CV Builder', href: '/cv-builder' },
     { label: 'CV Compare & Match', href: '/cv-compare' },
     { label: 'AI Bullet Optimizer', href: '/resume-optimizer' },
-    { label: 'Premium Templates', href: '/templates' }
+    { label: 'Professional Templates', href: '/templates' }
   ]},
   { label: 'Company', level: 0, items: [
     { label: 'Our Mission', href: '/about' },

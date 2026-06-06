@@ -243,31 +243,6 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {!user && (
-        <section className="p-12 rounded-3xl bg-primary/10 text-center space-y-6 border border-primary/20 animate-in fade-in zoom-in-95 duration-500">
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto text-primary">
-            <Lock size={32} />
-          </div>
-          <div className="max-w-xl mx-auto space-y-3">
-            <h2 className="text-3xl font-headline font-bold">Unlock 20+ More Premium Styles</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              Our full library includes specialized templates for Creative, Technical, Academic, and Executive roles. Sign up for free to access them all.
-            </p>
-          </div>
-          <div className="flex justify-center gap-4">
-            <Button asChild size="lg" className="font-bold px-12 h-14 shadow-xl shadow-primary/20">
-              <Link href="/signup">
-                <LogIn className="mr-2" size={20} />
-                Sign Up for Free Access
-              </Link>
-            </Button>
-          </div>
-          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
-            Join 50,000+ job seekers today
-          </p>
-        </section>
-      )}
-
       {/* Realistic Preview Modal */}
       <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
         <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden glass border-white/10">

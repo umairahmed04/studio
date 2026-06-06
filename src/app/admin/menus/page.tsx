@@ -106,7 +106,7 @@ export default function MenuManagement() {
             { id: 'f-cvb', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
             { id: 'f-cvc', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
             { id: 'f-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1 },
-            { id: 'f-tpl', label: 'Premium Templates', href: '/templates', level: 1 },
+            { id: 'f-tpl', label: 'Professional Templates', href: '/templates', level: 1 },
             { id: 'f-comp-h', label: 'Company', href: '#', level: 0 },
             { id: 'f-abt', label: 'Our Mission', href: '/about', level: 1 },
             { id: 'f-blg', label: 'Career Insights', href: '/blog', level: 1 },
@@ -131,8 +131,8 @@ export default function MenuManagement() {
               createdAt: serverTimestamp()
             });
             if (locationsRef) {
-              const locKey = config.name.toLowerCase().includes('header') ? 'header' : 'footer';
-              await setDoc(locationsRef, { [locKey]: docRef.id }, { merge: true });
+              const locKey = config.name.toLowerCase().includes('header') ? 'header' : config.name.toLowerCase().includes('footer') ? 'footer' : null;
+              if (locKey) await setDoc(locationsRef, { [locKey]: docRef.id }, { merge: true });
             }
             createdAny = true;
           } catch (e) {

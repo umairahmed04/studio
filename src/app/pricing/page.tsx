@@ -36,7 +36,7 @@ export default function PricingPage() {
         "Unlimited Job Match Reports",
         "Cover Letter Generator",
         "LinkedIn Summary Creator",
-        "20+ Premium Templates",
+        "Recruiter-Approved Templates",
         "Priority Email Support"
       ],
       button: "Upgrade to Pro",
