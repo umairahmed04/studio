@@ -168,11 +168,6 @@ export function Navbar() {
                               <div className="space-y-1 flex-1">
                                 <div className="flex items-center gap-2">
                                   <span className="font-bold text-[15px] text-foreground tracking-tight leading-tight">{child.label}</span>
-                                  {child.isPremium && (
-                                    <Badge className="bg-amber-500 text-[8px] h-3.5 px-1.5 uppercase font-black border-none text-white rounded-md shadow-sm">
-                                      PREMIUM
-                                    </Badge>
-                                  )}
                                 </div>
                                 {child.description && (
                                   <p className="text-[11px] text-muted-foreground font-medium leading-tight opacity-70">

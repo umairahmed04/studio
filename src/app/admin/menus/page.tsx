@@ -73,7 +73,7 @@ export default function MenuManagement() {
     { label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', icon: 'ShieldCheck', desc: 'Social presence scan' },
     { label: 'LinkedIn Summary', href: '/linkedin-summary-generator', icon: 'Linkedin', desc: 'Bio generator' },
     { label: 'Job Matcher', href: '/job-description-matcher', icon: 'Target', desc: 'JD keyword analysis' },
-    { label: 'AI Interview Prep', href: '/interview-prep', icon: 'Mic', desc: 'Practice voice rounds', premium: true },
+    { label: 'AI Interview Prep', href: '/interview-prep', icon: 'Mic', desc: 'Practice voice rounds', premium: false },
   ];
 
   useEffect(() => {
@@ -91,8 +91,8 @@ export default function MenuManagement() {
             { id: 'h-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1, iconName: 'Wand2', description: 'Auto-rewrite bullets' },
             { id: 'h-lia', label: 'LinkedIn Profile Audit', href: '/linkedin-profile-optimizer', level: 1, iconName: 'ShieldCheck', description: 'Social presence scan' },
             { id: 'h-lsg', label: 'LinkedIn Summary', href: '/linkedin-summary-generator', level: 1, iconName: 'Linkedin', description: 'Bio generator' },
-            { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: true },
-            { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: true },
+            { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: false },
+            { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: false },
             { id: 'h-tpl', label: 'Templates', href: '/templates', level: 0 },
             { id: 'h-blg', label: 'Blog', href: '/blog', level: 0 },
             { id: 'h-abt', label: 'About', href: '/about', level: 0 }

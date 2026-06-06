@@ -172,7 +172,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <StatCard title="Total CVs" value={String(resumes?.length || 0)} subValue="Saved documents" icon={<FileText className="text-primary" />} />
           <StatCard title="AI Boosts" value={String(activities?.filter(a => a.type === 'optimize').length || 0)} subValue="Optimizations" icon={<Wand2 className="text-accent" />} />
-          <StatCard title="Premium" value="Active" subValue="Full Features" icon={<FileCheck className="text-green-500" />} />
+          <StatCard title="Account Status" value="Active" subValue="Standard Plan" icon={<FileCheck className="text-green-500" />} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
