@@ -20,8 +20,7 @@ export default function PricingPage() {
         "3 Basic ATS Scans / mo",
         "Keyword Identification",
         "1 Job Match Report",
-        "Community Support",
-        "2 Standard Templates"
+        "Community Support"
       ],
       button: "Start Free",
       variant: "outline" as const
@@ -36,7 +35,6 @@ export default function PricingPage() {
         "Unlimited Job Match Reports",
         "Cover Letter Generator",
         "LinkedIn Summary Creator",
-        "Professional Templates",
         "Priority Email Support"
       ],
       button: "Upgrade to Pro",

@@ -16,8 +16,7 @@ const DEFAULT_FOOTER_MENU = [
     { label: 'ATS Scan Engine', href: '/ats-resume-checker' },
     { label: 'Interactive CV Builder', href: '/cv-builder' },
     { label: 'CV Compare & Match', href: '/cv-compare' },
-    { label: 'AI Bullet Optimizer', href: '/resume-optimizer' },
-    { label: 'Professional Templates', href: '/templates' }
+    { label: 'AI Bullet Optimizer', href: '/resume-optimizer' }
   ]},
   { label: 'Company', level: 0, items: [
     { label: 'Our Mission', href: '/about' },

@@ -27,7 +27,6 @@ const navItems = [
   { name: 'Page Management', href: '/admin/pages', icon: FileSearch },
   { name: 'User Directory', href: '/admin/users', icon: Users },
   { name: 'AI Tool Control', href: '/admin/tools', icon: Wand2 },
-  { name: 'CV Templates', href: '/admin/templates', icon: Layout },
   { name: 'AdSense Slots', href: '/admin/ads', icon: Megaphone },
   { name: 'Global Settings', href: '/admin/settings', icon: Settings },
 ];

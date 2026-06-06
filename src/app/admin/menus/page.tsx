@@ -93,7 +93,6 @@ export default function MenuManagement() {
             { id: 'h-lsg', label: 'LinkedIn Summary', href: '/linkedin-summary-generator', level: 1, iconName: 'Linkedin', description: 'Bio generator' },
             { id: 'h-itp', label: 'AI Interview Prep', href: '/interview-prep', level: 1, iconName: 'Mic', description: 'Practice voice rounds', isPremium: false },
             { id: 'h-rs', label: 'Resume Share', href: '/settings/sharing', level: 1, iconName: 'Share2', description: 'Public online profile', isPremium: false },
-            { id: 'h-tpl', label: 'Templates', href: '/templates', level: 0 },
             { id: 'h-blg', label: 'Blog', href: '/blog', level: 0 },
             { id: 'h-abt', label: 'About', href: '/about', level: 0 }
           ]
@@ -106,7 +105,6 @@ export default function MenuManagement() {
             { id: 'f-cvb', label: 'Interactive CV Builder', href: '/cv-builder', level: 1 },
             { id: 'f-cvc', label: 'CV Compare & Match', href: '/cv-compare', level: 1 },
             { id: 'f-rzo', label: 'AI Bullet Optimizer', href: '/resume-optimizer', level: 1 },
-            { id: 'f-tpl', label: 'Professional Templates', href: '/templates', level: 1 },
             { id: 'f-comp-h', label: 'Company', href: '#', level: 0 },
             { id: 'f-abt', label: 'Our Mission', href: '/about', level: 1 },
             { id: 'f-blg', label: 'Career Insights', href: '/blog', level: 1 },

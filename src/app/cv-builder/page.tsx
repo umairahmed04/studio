@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useEffect, useState } from 'react';
@@ -205,12 +204,6 @@ export default function CVBuilderDashboard() {
               title="Import Document" 
               desc="Extract details from an existing file." 
               onClick={() => setIsUploading(true)} 
-            />
-            <EntryCard 
-              icon={<Layout />} 
-              title="Templates" 
-              desc="Pick from our recruiter-approved designs." 
-              href="/templates" 
             />
           </CardContent>
           {isUploading && (
