@@ -61,17 +61,16 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      // Do not use console.error as it triggers Next.js error overlays in dev
       let message: React.ReactNode = error.message;
       
       if (error.code === 'auth/unauthorized-domain') {
         message = (
           <div className="space-y-3">
-            <p><strong>Configuration Required:</strong> This domain is not authorized in your Firebase Project.</p>
+            <p><strong>Configuration Required:</strong> The domain <code>atsresumescan.com</code> is not authorized in your Firebase Project.</p>
             <ol className="list-decimal pl-4 space-y-1">
               <li>Go to <strong>Firebase Console</strong></li>
               <li>Authentication &gt; Settings &gt; <strong>Authorized Domains</strong></li>
-              <li>Add: <code className="bg-muted px-1 rounded">{window.location.hostname}</code></li>
+              <li>Add: <code className="bg-muted px-1 rounded">atsresumescan.com</code></li>
             </ol>
           </div>
         );
