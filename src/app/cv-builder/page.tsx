@@ -147,7 +147,6 @@ export default function CVBuilderDashboard() {
     }
     toast({ title: "Importing...", description: "Mapping details to the builder." });
     
-    // System Upgrade: Global Sync on Import
     if (typeof window !== 'undefined') {
         sessionStorage.setItem('last_extracted_cv', text);
     }

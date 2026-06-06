@@ -8,7 +8,6 @@ import { doc, collection, query } from 'firebase/firestore';
 
 /**
  * @fileOverview Dynamic Global Footer with 4-Section Design Alignment.
- * Matches design reference: 1 Branding Column + 3 Link Columns (Tools, Company, Legal).
  */
 
 const DEFAULT_FOOTER_MENU = [
@@ -130,7 +129,6 @@ export function Footer() {
               </div>
             ))
           ) : (
-            // Placeholder skeleton during initial load
             <>
               {[1, 2, 3].map(i => (
                 <div key={i} className="space-y-4 animate-pulse lg:pl-8">
@@ -150,9 +148,6 @@ export function Footer() {
           <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
             © {new Date().getFullYear()} ATS Resume Scan. All rights reserved.
           </p>
-          <div className="flex gap-4">
-             <span className="text-[10px] px-3 py-1.5 rounded-lg bg-muted/50 text-muted-foreground font-black uppercase tracking-widest border border-white/5">System Status: Online</span>
-          </div>
         </div>
       </div>
     </footer>
