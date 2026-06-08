@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   keywords: ['ATS resume checker', 'resume score', 'AI resume builder', 'beat recruitment bots', 'resume optimization', 'CV builder', 'free resume scan', '2026 resume trends'],
   metadataBase: new URL('https://atsresumescan.com'),
   alternates: {
-    canonical: '/',
+    canonical: 'https://atsresumescan.com',
   },
   openGraph: {
     title: 'ATSResumeScan | Beat the Recruitment Bots with High-Performance AI',
