@@ -5,6 +5,7 @@
  * 
  * Prioritizes environment variables from Firebase App Hosting.
  * Uses the verified production SDK values as safe fallbacks for build-time pre-rendering.
+ * Domain synchronized to atsresumescan.com.
  */
 
 const getSafeEnv = (key: string, fallback: string) => {
@@ -13,7 +14,7 @@ const getSafeEnv = (key: string, fallback: string) => {
 };
 
 export const firebaseConfig = {
-  // Verified Production API Key for studio-431801258-767f2
+  // Verified Production SDK values for studio-431801258-767f2
   apiKey: getSafeEnv('NEXT_PUBLIC_FIREBASE_API_KEY', "AIzaSyCYmhxRxGt8AlMjlLvdi2rMWl2_bxI7I68"),
   authDomain: getSafeEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', "atsresumescan.com"),
   databaseURL: getSafeEnv('NEXT_PUBLIC_FIREBASE_DATABASE_URL', "https://studio-431801258-767f2-default-rtdb.firebaseio.com"),

@@ -9,6 +9,7 @@
 - **Framework:** Next.js 15 (App Router, TypeScript).
 - **Backend:** Firebase (Authentication, Firestore).
 - **AI Engine:** Standalone Genkit v1.x using Gemini 2.5 Flash.
+- **Domain:** atsresumescan.com
 - **Theme:** Forced Light Mode (Professional Indigo/White).
 
 ## 2. Design System: "Silicon Valley Executive"

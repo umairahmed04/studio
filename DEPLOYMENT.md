@@ -19,6 +19,7 @@ The application is configured to pull credentials from environment variables or 
 - **Verified Values**:
     - API Key: `AIzaSyCYmhxRxGt8AlMjlLvdi2rMWl2_bxI7I68`
     - Database URL: `https://studio-431801258-767f2-default-rtdb.firebaseio.com`
+    - Production Domain: `https://atsresumescan.com`
 
 ---
 
@@ -37,6 +38,10 @@ The application is configured to pull credentials from environment variables or 
    ```bash
    firebase deploy --only firestore:rules
    ```
+
+3. **Custom Domain**:
+   - Add `atsresumescan.com` to your Firebase Hosting Custom Domains.
+   - Add `atsresumescan.com` to **Firebase Console > Authentication > Settings > Authorized Domains**.
 
 ---
 
