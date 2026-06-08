@@ -56,16 +56,13 @@ export function Footer() {
       let currentColumn: any = null;
 
       // Filter out Template references at the logic level
-      const filteredItems = activeHeaderMenu.items.filter((item: any) => {
+      const filteredItems = activeFooterMenu.items.filter((item: any) => {
         const hrefMatch = item.href?.toLowerCase().includes('/templates');
         const labelMatch = item.label?.toLowerCase().includes('template');
         return !hrefMatch && !labelMatch;
       });
 
-      activeFooterMenu.items.forEach((item: any) => {
-        // Double check item label for template exclusion
-        if (item.label?.toLowerCase().includes('template') || item.href?.includes('/templates')) return;
-
+      filteredItems.forEach((item: any) => {
         if (item.level === 0) {
           currentColumn = { title: item.label, links: [] };
           columns.push(currentColumn);
@@ -79,9 +76,10 @@ export function Footer() {
       });
       if (columns.length > 0) return columns;
     }
+    
     if (menusLoading || settingsLoading) return [];
     
-    // Default fallback columns also filtered
+    // Default fallback columns
     return DEFAULT_FOOTER_MENU.map(col => ({
       title: col.label,
       links: col.items
