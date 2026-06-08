@@ -55,7 +55,7 @@ export function Footer() {
       const columns: any[] = [];
       let currentColumn: any = null;
 
-      // Filter out Template references at the logic level
+      // STRICT FILTER: Filter out Template references at the logic level
       const filteredItems = activeFooterMenu.items.filter((item: any) => {
         const hrefMatch = item.href?.toLowerCase().includes('/templates');
         const labelMatch = item.label?.toLowerCase().includes('template');
