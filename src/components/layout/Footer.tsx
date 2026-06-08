@@ -89,9 +89,9 @@ export function Footer() {
   return (
     <footer className="bg-background border-t py-16" suppressHydrationWarning>
       <div className="container mx-auto px-4" suppressHydrationWarning>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8" suppressHydrationWarning>
           {/* Column 1: Brand Identity */}
-          <div className="space-y-6">
+          <div className="space-y-6" suppressHydrationWarning>
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative w-10 h-10 flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary to-accent rounded-xl blur-[1px] opacity-80" />
@@ -121,7 +121,7 @@ export function Footer() {
           {/* Dynamic Columns: Tools, Company, Legal */}
           {footerColumns.length > 0 ? (
             footerColumns.map((col: any, idx: number) => (
-              <div key={`${col.title}-${idx}`} className="lg:pl-8">
+              <div key={`${col.title}-${idx}`} className="lg:pl-8" suppressHydrationWarning>
                 <h4 className="font-headline font-bold mb-8 uppercase text-[11px] tracking-[0.2em] text-primary">{col.title}</h4>
                 <ul className="space-y-4">
                   {col.links.map((link: any, lIdx: number) => (

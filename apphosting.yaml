@@ -1,6 +1,6 @@
 # Firebase App Hosting Production Configuration
 # Optimized for Next.js 15 Standalone Output
-# Rollout Trigger Version: 2026.06.03.06
+# Rollout Trigger Version: 2026.06.08.01
 
 runtime: nodejs20
 
