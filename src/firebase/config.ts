@@ -9,8 +9,10 @@
  */
 
 const getSafeEnv = (key: string, fallback: string) => {
-  if (typeof process === 'undefined') return fallback;
-  return process.env[key] || fallback;
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
+  }
+  return fallback;
 };
 
 export const firebaseConfig = {

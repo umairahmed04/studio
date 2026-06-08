@@ -1,6 +1,6 @@
 # Firebase App Hosting Production Configuration
-# Optimized for Next.js 15 Standalone Output
-# Rollout Trigger Version: 2026.06.08.03
+# Optimized for Next.js 15 High-Performance Build
+# Rollout Trigger Version: 2026.06.08.04
 
 runtime: nodejs20
 
@@ -8,10 +8,10 @@ runConfig:
   minInstances: 0
   maxInstances: 10
   concurrency: 80
-  cpu: 1
-  memoryMiB: 2048
+  cpu: 2
+  memoryMiB: 4096
 
-# Environment variables mapping for Next.js 15
+# Universal environment mapping for Next.js 15 hydration
 env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     availability:
@@ -47,6 +47,7 @@ env:
       - RUNTIME
   - variable: GOOGLE_API_KEY
     availability:
+      - BUILD
       - RUNTIME
   - variable: NODE_ENV
     value: production
