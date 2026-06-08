@@ -7,7 +7,7 @@ import { useFirestore, useDoc, useCollection } from '@/firebase';
 import { doc, collection, query } from 'firebase/firestore';
 
 /**
- * @fileOverview Dynamic Global Footer with 4-Section Design Alignment.
+ * @fileOverview Dynamic Global Footer with Code-Level Filters to hide Templates.
  */
 
 const DEFAULT_FOOTER_MENU = [
@@ -55,7 +55,17 @@ export function Footer() {
       const columns: any[] = [];
       let currentColumn: any = null;
 
+      // Filter out Template references at the logic level
+      const filteredItems = activeHeaderMenu.items.filter((item: any) => {
+        const hrefMatch = item.href?.toLowerCase().includes('/templates');
+        const labelMatch = item.label?.toLowerCase().includes('template');
+        return !hrefMatch && !labelMatch;
+      });
+
       activeFooterMenu.items.forEach((item: any) => {
+        // Double check item label for template exclusion
+        if (item.label?.toLowerCase().includes('template') || item.href?.includes('/templates')) return;
+
         if (item.level === 0) {
           currentColumn = { title: item.label, links: [] };
           columns.push(currentColumn);
@@ -70,6 +80,8 @@ export function Footer() {
       if (columns.length > 0) return columns;
     }
     if (menusLoading || settingsLoading) return [];
+    
+    // Default fallback columns also filtered
     return DEFAULT_FOOTER_MENU.map(col => ({
       title: col.label,
       links: col.items
@@ -77,8 +89,8 @@ export function Footer() {
   }, [activeFooterMenu, menusLoading, settingsLoading]);
 
   return (
-    <footer className="bg-background border-t py-16">
-      <div className="container mx-auto px-4">
+    <footer className="bg-background border-t py-16" suppressHydrationWarning>
+      <div className="container mx-auto px-4" suppressHydrationWarning>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* Column 1: Brand Identity */}
           <div className="space-y-6">

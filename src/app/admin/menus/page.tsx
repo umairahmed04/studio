@@ -352,7 +352,7 @@ export default function MenuManagement() {
                 <AccordionItem value="pages" className="border-b px-4">
                   <AccordionTrigger className="text-xs font-bold hover:no-underline py-4">Dynamic Pages</AccordionTrigger>
                   <AccordionContent className="pt-0 pb-4 space-y-2">
-                    {pages?.map(p => (
+                    {pages?.filter(p => p.slug !== 'templates').map(p => (
                       <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-white/5 group hover:border-primary/20 transition-all">
                         <span className="text-xs font-bold truncate pr-2">{p.title}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => addItemToMenu(p.title, `/${p.slug === 'home' ? '' : p.slug}`)}>

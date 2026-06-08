@@ -37,7 +37,6 @@ import { useUser, useAuth, useDoc, useFirestore, useCollection } from '@/firebas
 import { signOut } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { doc, collection, query } from 'firebase/firestore';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const ICON_MAP: Record<string, any> = {
@@ -95,10 +94,17 @@ export function Navbar() {
   const processedMenuItems = useMemo(() => {
     if (!activeHeaderMenu?.items) return [];
     
+    // STRICT FILTER: Remove any item related to Templates immediately
+    const filteredRaw = activeHeaderMenu.items.filter((item: any) => {
+      const hrefMatch = item.href?.toLowerCase().includes('/templates');
+      const labelMatch = item.label?.toLowerCase().includes('template');
+      return !hrefMatch && !labelMatch;
+    });
+
     const tree: any[] = [];
     const stack: any[] = [];
 
-    activeHeaderMenu.items.forEach((item: any) => {
+    filteredRaw.forEach((item: any) => {
       const node = { ...item, children: [] };
       
       while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
@@ -118,8 +124,8 @@ export function Navbar() {
   }, [activeHeaderMenu]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl" suppressHydrationWarning>
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between" suppressHydrationWarning>
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative w-10 h-10 flex items-center justify-center">
             <div className="absolute inset-0 bg-gradient-to-tr from-primary to-accent rounded-xl blur-[2px] opacity-80" />

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { useFirestore, useUser, useCollection } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
-import { Plus, FileText, Trash2, Edit2, Loader2, Clock, Layout, FileSearch, Sparkles, Wand2, X, Globe, User, Briefcase, Mail, Phone, Zap, Linkedin } from 'lucide-react';
+import { Plus, FileText, Trash2, Edit2, Loader2, Clock, FileSearch, Sparkles, Wand2, X, Globe, User, Briefcase, Mail, Phone, Zap, Linkedin } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -166,7 +166,7 @@ export default function CVBuilderDashboard() {
     }
   };
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center" suppressHydrationWarning><Loader2 className="animate-spin text-primary w-10 h-10" /></div>;
   if (!user) return null;
 
   return (
@@ -175,7 +175,7 @@ export default function CVBuilderDashboard() {
       description="Create, optimize, and manage professional resumes with one-click AI generation."
       badge="Professional Suite"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12" suppressHydrationWarning>
         <Card className="lg:col-span-2 border-primary/20 bg-primary/5 shadow-xl shadow-primary/5 overflow-hidden">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function CVBuilderDashboard() {
         </Card>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6" suppressHydrationWarning>
         <h3 className="text-2xl font-bold flex items-center gap-2">
           Your Resumes
           <Badge variant="outline" className="font-bold">{resumes?.length || 0}</Badge>
