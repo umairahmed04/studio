@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { logAnalyticsEvent, updateHeartbeat } from '@/lib/analytics';
+import { logAnalyticsEvent, updateHeartbeat, detectTrafficSource } from '@/lib/analytics';
 
 /**
  * @fileOverview Global component that tracks user behavior and maintains real-time presence.
@@ -38,55 +38,82 @@ export function AnalyticsTracker() {
     initialized.current = true;
 
     const trackSession = async () => {
+      // 1. Detect New vs Returning
+      let isNewUser = true;
+      if (typeof window !== 'undefined') {
+        const returningKey = 'ats_returning_visitor';
+        if (localStorage.getItem(returningKey)) {
+          isNewUser = false;
+        } else {
+          localStorage.setItem(returningKey, 'true');
+        }
+      }
+
+      // 2. Parse UTMs
+      const utms: Record<string, string> = {};
+      const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+      utmKeys.forEach(key => {
+        const val = searchParams.get(key);
+        if (val) utms[key] = val;
+      });
+
+      // 3. Geo & Browser
       let geo = { country: 'Unknown', city: 'Unknown' };
       try {
         const res = await fetch('https://ipapi.co/json/');
         if (res.ok) {
           const data = await res.json();
-          geo = { country: data.country_name || 'Unknown', city: data.city || 'Unknown' };
+          geo = { country: data.country_name || 'Unknown', city: data.city || 'Unknown', region: data.region || 'Unknown' };
         }
-      } catch (e) {
-        // Fallback or ignore
-      }
+      } catch (e) {}
+
+      const { source, medium } = detectTrafficSource(document.referrer, utms);
 
       const browserData = {
-        browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Other',
-        os: navigator.platform,
-        device: typeof window !== 'undefined' && window.innerWidth < 768 ? 'Mobile' : 'Desktop',
+        browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : navigator.userAgent.includes('Safari') ? 'Safari' : 'Other',
+        os: navigator.platform.includes('Mac') ? 'MacOS' : navigator.platform.includes('Win') ? 'Windows' : 'Other',
+        device: typeof window !== 'undefined' && window.innerWidth < 768 ? 'Mobile' : window.innerWidth < 1024 ? 'Tablet' : 'Desktop',
       };
 
       const baseData = {
         sessionId: sessionId,
         path: pathname,
         userId: user?.uid || 'guest',
+        referrer: document.referrer || 'Direct',
+        source,
+        medium,
+        isNewUser,
+        ...utms,
         ...geo,
         ...browserData,
       };
 
-      // 1. Log Page View
+      // Log Session Start
+      logAnalyticsEvent(db, {
+        type: 'session_start',
+        path: pathname,
+        sessionId: sessionId,
+        userId: user?.uid || null,
+        source,
+        medium,
+        isNewUser,
+        metadata: { ...baseData }
+      });
+
+      // Log Page View
       logAnalyticsEvent(db, {
         type: 'page_view',
         path: pathname,
         sessionId: sessionId,
         userId: user?.uid || null,
-        metadata: { ...geo, ...browserData }
+        source,
+        medium,
+        metadata: { ...baseData }
       });
 
-      // 1b. Log QR Scan if parameter present
-      if (searchParams.get('ref') === 'qr') {
-        logAnalyticsEvent(db, {
-          type: 'qr_scan',
-          path: pathname,
-          sessionId: sessionId,
-          userId: user?.uid || null,
-          label: 'QR Code Reference'
-        });
-      }
-
-      // 2. Initial Heartbeat
+      // Initial Heartbeat for presence
       updateHeartbeat(db, sessionId, baseData);
 
-      // 3. Setup interval for live presence (every 30s)
       const interval = setInterval(() => {
         updateHeartbeat(db, sessionId, { path: pathname });
       }, 30000);
@@ -97,7 +124,7 @@ export function AnalyticsTracker() {
     trackSession();
   }, [pathname, db, user?.uid, sessionId, searchParams, userData, user?.email]);
 
-  // Track global clicks for feature engagement (Excludes admins)
+  // Global Click Tracking (Excludes Admins)
   useEffect(() => {
     if (!db || !sessionId) return;
     const isAdmin = userData?.role === 'admin' || user?.email === 'itexpert47@gmail.com';
@@ -112,7 +139,7 @@ export function AnalyticsTracker() {
           path: pathname,
           sessionId: sessionId,
           userId: user?.uid || null,
-          label: clickable.textContent?.trim() || 'unlabeled_button'
+          label: clickable.textContent?.trim() || 'unlabeled_interaction'
         });
       }
     };
